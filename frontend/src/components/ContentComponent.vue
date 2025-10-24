@@ -2,7 +2,7 @@
   <div>
     <p>{{ title }}</p>
     <div class="row items-center">
-      <q-btn color="amber" glossy label="Amber" @click="readPdfFile"/>
+      <q-btn color="amber" glossy label="Amber" />
       <p v-if="loading">Loading...</p>
       <pre v-if="result">{{ result }}</pre>
       <p v-if="error" style="color:red">{{ error }}</p>
@@ -11,7 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import list from "../../../backend/src/utils/pdfParse";
 import { ref } from 'vue'
 
 const loading = ref(false)
@@ -25,10 +24,5 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   title: "",
 });
-
-
-function readPdfFile() {
-  console.log(list);
-}
 
 </script>

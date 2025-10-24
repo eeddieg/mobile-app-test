@@ -23,7 +23,7 @@
     "helmet": "^8.0.0",
     "http-errors": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
-    "pdf-parse": "^2.3.0",
+    "pdf2json": "^4.0.0",
     "pm2": "^5.4.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
@@ -38,6 +38,6 @@
     "@types/helmet": "^0.0.48",
     "@types/http-errors": "^2.0.4",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.9.3"
+    "@types/node": "^22.18.12"
   }
 }
