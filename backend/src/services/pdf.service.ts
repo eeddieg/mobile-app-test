@@ -3,7 +3,11 @@ import fs from "fs";
 import { spawn } from "child_process";
 
 export default class PdfService {
-  static async retrievePdf(): Promise<any> {
+  static async retrievePdf(file: string): Promise<any> {
+
+  }
+
+  static async extractPdf(): Promise<any> {
     const folderName = "assets";
     const extension = ".pdf";
     const filename = "Πρόγραμμα-ΚΙΑ.pdf";
@@ -16,6 +20,9 @@ export default class PdfService {
     if (!fs.existsSync(pdfPath)) {
       fs.mkdirSync(pdfPath, { recursive: true });
     }
+
+    // Retrieve PDF file 
+
 
     // Read all .pdf files in the folder
     const files = fs

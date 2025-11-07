@@ -10,10 +10,7 @@ export default class UtilsController {
     next: NextFunction
   ): Promise<void> {
     try {    
-      const results = await PdfService.retrievePdf();
-
-      console.log(results)
-      console.log(results.length)
+      const results = await PdfService.extractPdf();
 
       if (!results.status) {
         throw new Error("Can not read Shedule PDF File.")

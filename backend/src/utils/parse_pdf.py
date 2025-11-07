@@ -12,7 +12,7 @@ except ImportError:
     import pdfplumber # pyright: ignore[reportMissingImports]
 
 
-def parse_pdf(pdf_path: str) -> str:
+def parse_pdf1(pdf_path: str) -> str:
   data = []
 
   try:
@@ -39,7 +39,7 @@ def parse_pdf(pdf_path: str) -> str:
     return json.dumps({"error": str(e)})
 
 
-def parse_pdf_with_footer_after_last_table(pdf_path: str) -> str:
+def parse_pdf(pdf_path: str) -> str:
     data = []
 
     try:
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
   try:
     # result_json = parse_pdf(pdf_path)
-    result_json = parse_pdf_with_footer_after_last_table(pdf_path)
+    result_json = parse_pdf(pdf_path)
     print(json.dumps({"data": json.loads(result_json)}, ensure_ascii=False))
   except Exception as e:
     print(json.dumps({"error": str(e)}))
