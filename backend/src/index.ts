@@ -6,10 +6,10 @@ import handleError from "./middleware/error.middleware";
 import logger from "./middleware/logger.middleware";
 import router from "./routes/index.router";
 
-dotenv.config();
+dotenv.config({ path: ".env.dev" });
 
 const app: Express = express();
-const baseUrl = "/" + process.env.BASE_URL as string;
+const baseUrl = "/" + process.env.BASE_API_URL as string;
 const port = parseInt(process.env.PORT as string, 10) | 3000;
 
 app.use(cors());

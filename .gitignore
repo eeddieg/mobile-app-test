@@ -17,7 +17,7 @@ backend/*.njsproj
 backend/*.sln
 
 # local .env files
-backend/.env.local*
+backend/.env.dev
 
 #####################
 # Frontend
@@ -53,4 +53,4 @@ frontend/*.njsproj
 frontend/*.sln
 
 # local .env files
-frontend/.env.local*
+frontend/.env.dev
