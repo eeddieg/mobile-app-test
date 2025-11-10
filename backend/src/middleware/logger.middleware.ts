@@ -6,7 +6,6 @@ const logger = (req: Request, res: Response, next: NextFunction) => {
       req.method,
       decodeURI(req.url),
       res.statusCode,
-      res.statusMessage
     );
   });
   next();

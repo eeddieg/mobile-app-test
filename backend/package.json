@@ -27,7 +27,8 @@
     "pdf2json": "^4.0.0",
     "pm2": "^5.4.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/axios": "^0.9.36",

@@ -16,8 +16,13 @@ backend/*.ntvs*
 backend/*.njsproj
 backend/*.sln
 
-# local .env files
-backend/.env.dev
+# Environment files
+backend/.env
+backend/.env.local
+backend/.env.*.local
+backend/.env.development
+backend/.env.production
+
 
 #####################
 # Frontend

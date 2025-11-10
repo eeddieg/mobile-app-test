@@ -1,16 +1,13 @@
 import express, { Express } from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
 import handleError from "./middleware/error.middleware";
 import logger from "./middleware/logger.middleware";
 import router from "./routes/index.router";
-
-dotenv.config({ path: ".env.dev" });
+import env from "./config/env";
+import Color from "./config/color.cli";
 
 const app: Express = express();
-const baseUrl = "/" + process.env.BASE_API_URL as string;
-const port = parseInt(process.env.PORT as string, 10) | 3000;
 
 app.use(cors());
 app.use(helmet());
@@ -20,11 +17,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(logger);
 app.use(handleError);
 
-app.use(baseUrl, router);
+const baseApiUrl = "/" + env.BASE_API_URL
+app.use(baseApiUrl, router);
 
 try {
-  app.listen(port, () => {
-    console.log(`API Server started on http://localhost:${port}${baseUrl}`);
+  app.listen(env.PORT, () => {
+    console.log(`API Server started on ${Color.Bright}${Color.FgYellow}http://localhost:${env.PORT}${baseApiUrl}${Color.Reset}`);
   })
 } catch(err) {
     console.log("API Server failed to start.");
