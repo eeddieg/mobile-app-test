@@ -9,26 +9,43 @@ export default class UtilsController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {    
-      const results = await PdfService.extractPdf();
+    const fetchResponse = await PdfService.retrievePdf();     
 
-      if (!results.status) {
-        throw new Error("Can not read Shedule PDF File.")
-      } else {
-
-        res.status(200).json({
-          status: results.status,
-          statusCode: 200,
-          content: results,
-        }); 
-      }
-
-    } catch (error: any) {
-      res.status(error.statusCode).json({
-        status: false,
-        statusCode: error.statusCode,
-        message: error.message,
+    if (!fetchResponse.status) {
+      res.status(424).json({
+        status: fetchResponse.status,
+        statusCode: 424,
+        message: fetchResponse.message,
+        error: fetchResponse.error,          
       }); 
+    } else {
+
+      const filepath = fetchResponse.filepath as string;
+      const extractResponse = await PdfService.extractPdf(filepath);
+
+      if (extractResponse == undefined) {
+        res.status(200).json({
+          status: false,
+          statusCode: 200,
+          message: "An error occured. PDF file cannot be parsed.",
+          data: null,
+        }); 
+      } else {
+        if (extractResponse.status) {
+          res.status(200).json({
+            status: extractResponse.status,
+            statusCode: 200,
+            data: extractResponse.data
+          }); 
+        } else {
+          res.status(200).json({
+            status: extractResponse.status,
+            statusCode: 200,
+            message: extractResponse.message,
+            data: extractResponse.data
+          }); 
+        }
+      }
 
     }
   };

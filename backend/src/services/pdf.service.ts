@@ -1,366 +1,148 @@
-
-// import path from "path";
-// import fs from "fs";
-// import { spawn } from "child_process";
-// import env from "@/config/env";
-// import Color from "@/config/color.cli";
-// import axios from "axios";
-
-// export default class PdfService {
-
-//   static async extractPdf(): Promise<any> {
-//     const folderName = "assets";
-//     const extension = ".pdf";
-//     const filename = "schedule.pdf";
-//     const pdfParseScript = "parse_pdf.py";
-
-//     const pdfPath = path.join(__dirname, "..", "..", folderName);
-//     const utilsPath = path.join(__dirname, "..", "utils");
-//     const scriptPath = path.join(utilsPath, pdfParseScript);
-//     const fullPath = path.join(pdfPath, filename);
-
-//     // Ensure folder exists
-//     if (!fs.existsSync(pdfPath)) {
-//       fs.mkdirSync(pdfPath, { recursive: true });
-//     }
-
-//     // Retrieve PDF file 
-//     try {
-//       const url = env.PDF_URL;
-//       const response = await axios.get<ArrayBuffer>(url, {
-//         responseType: "arraybuffer",
-//       });
-
-//       // Convert ArrayBuffer to Buffer
-//       const buffer = Buffer.from(response.data);
-
-//       console.log(buffer)
-      
-//       // Write the PDF file
-//       fs.writeFileSync(fullPath, buffer);
-//       console.log(`PDF file ${Color.Bright}${Color.FgBlue}${filename}${Color.Reset} downloaded to ${Color.Bright}${Color.FgGreen}${pdfPath}${Color.Reset}`);
-
-//     } catch (error) {
-//       console.error("Error downloading PDF:", error);
-//       throw new Error(`Error downloading PDF: ${error}`);
-//     }
-
-
-
-
-//     // Read all .pdf files in the folder
-//     const files = fs
-//       .readdirSync(pdfPath)
-//       .filter((file) => path.extname(file).toLowerCase() === extension);
-
-//     // Find the target file
-//     const targetFile = files.find((file) => file === filename);
-
-//     if (!targetFile) {
-//       throw new Error(`File not found: ${filename}`);
-//     }
-
-//     return new Promise((resolve, reject) => {
-//       const python = spawn("python3", [scriptPath, fullPath]);
-
-//       let output = "";
-//       let errorOutput = "";
-
-//       python.stdout.on("data", (data) => {
-//         output += data.toString();
-//       });
-
-//       python.stderr.on("data", (data) => {
-//         errorOutput += data.toString();
-//       });
-
-//       python.on("close", (code) => {
-//         if (code !== 0) {
-//           console.error("Python error output:", errorOutput);
-//           return reject(
-//             new Error(errorOutput || `Python exited with code ${code}`)
-//           );
-//         }
-
-//         try {
-//           const data = output.slice(10, -3);
-          
-//           const result = (JSON.parse(output)).data;
-
-//           if (result.length == 0) {
-//             reject({ status: false, data: new Error(result.error) });
-//           } else {
-//             resolve({ status: true, data: result });
-//           }
-//         } catch (err) {
-//           console.error("Raw Python output:", output);
-//           reject(new Error(`Failed to parse Python output: ${err}`));
-//         }
-//       });
-//     });
-//   }
-// }
-
-
-
-
+import { Response } from 'express';
 
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
+import env from "@/config/env";
+import Color from "@/config/color.cli";
+import axios from "axios";
 
 export default class PdfService {
-  static async retrievePdf(file: string): Promise<any> {
+  
+  static resetDownloadFolder(folderPath: string) {
+    try {
+      if (fs.existsSync(folderPath)) {
+        const res = fs.rmSync(folderPath, { recursive: true })
+        if (res == undefined) {
+          fs.mkdirSync(folderPath, { recursive: true });
+          return {
+            status: true,
+            message: "Folder reset successfully."
+          }
+        } else {
+          return {
+            status: false,
+            message: "Folder can not be reset."
+          }
+        }
+      } else {
+          fs.mkdirSync(folderPath, { recursive: true });
+          return {
+            status: true,
+            message: "Folder reset successfully."
+          }
+      }
+    } catch (error) {
+      const folderName = path.dirname(folderPath);
+      return {
+        status: false,
+        message: `Error in deleting folder ${folderName}`,
+        error
+      }
+    }
+  }
+
+  static async retrievePdf(): Promise<any> {
+    const filename = "schedule.pdf";
+    const folderName = "assets";
+    const pdfPath = path.join(__dirname, "..", "..", folderName);
+    
+    // delete download folder, if exists and then create it again
+    const res = PdfService.resetDownloadFolder(pdfPath)
+
+    fs.mkdirSync(pdfPath, { recursive: true });
+
+    const filepath = path.join(pdfPath, filename);
+
+
+    // Download schedule file
+    try {
+      const url = env.PDF_URL;
+      const response = await axios.get<ArrayBuffer>(url, {
+        responseType: "arraybuffer",
+      });
+
+      // Convert ArrayBuffer to Buffer
+      const buffer = Buffer.from(response.data);
+      
+      // Write the PDF file
+      fs.writeFileSync(filepath, buffer);
+      console.log(`PDF file ${Color.Bright}${Color.FgBlue}${filename}${Color.Reset} downloaded to ${Color.Bright}${Color.FgGreen}${pdfPath}${Color.Reset}`);
+
+      return new Promise((resolve) => {
+        resolve({
+          status: true,
+          message: "PDF file downloaded successfully",
+          filepath
+        });
+      });
+
+    } catch (error) {
+      return new Promise((reject) => {
+        reject({
+          status: false,
+          message: "Error while trying to download PDF file",
+          error,
+        });
+      });
+    }
 
   }
 
-  static async extractPdf(): Promise<any> {
-    const folderName = "assets";
-    const extension = ".pdf";
-    const filename = "schedule.pdf";
+  static async extractPdf(filepath: string): Promise<any> {
     const pdfParseScript = "parse_pdf.py";
-
-    const pdfPath = path.join(__dirname, "..", "..", folderName);
     const utilsPath = path.join(__dirname, "..", "utils");
-    const fullPath = path.join(pdfPath, filename);
     const scriptPath = path.join(utilsPath, pdfParseScript);
+    
+
+    const pdfPath = path.dirname(filepath);
 
     return new Promise((resolve, reject) => {
-      const python = spawn("python3", [scriptPath, fullPath]);
+      try {
 
-      let output = "";
-      let errorOutput = "";
+        const python = spawn("python3", [scriptPath, filepath]);
 
-      python.stdout.on("data", (data) => {
-        output += data.toString();
-      });
+        let output = "";
+        let errorOutput = "";
 
-      python.stderr.on("data", (data) => {
-        errorOutput += data.toString();
-      });
+        python.stdout.on("data", (data) => {
+          output += data.toString();
+        });
 
-      python.on("close", (code) => {
-        if (code !== 0) {
-          console.error("Python error output:", errorOutput);
-          return reject(
-            new Error(errorOutput || `Python exited with code ${code}`)
-          );
-        }
+        python.stderr.on("data", (data) => {
+          errorOutput += data.toString();
+        });
 
-        try {
-          const data = output.slice(10, -3);
-          
-          const result = (JSON.parse(output)).data;
-
-          if (result.length == 0) {
-            reject({ status: false, data: new Error(result.error) });
-          } else {
-            resolve({ status: true, data: result });
+        python.on("close", (code) => {
+          if (code !== 0) {
+            console.error("Python error output:", errorOutput);
+            return reject ({
+              status: false,
+              message: `Python exited with code ${code}`,
+              data: errorOutput,
+            });
           }
-        } catch (err) {
-          console.error("Raw Python output:", output);
-          reject(new Error(`Failed to parse Python output: ${err}`));
-        }
-      });
+
+          try {
+            const result = JSON.parse(output).data;
+
+            if (!result || result.length === 0) {
+              return reject({ status: false, data: result });
+            }
+
+            return resolve({ status: true, data: result });
+
+          } catch (err) {
+            console.error("Raw Python output:", output);
+            throw { status: false, err, data: output };
+          }
+        });
+      } catch (error) {
+        console.error("PDF extraction failed: ", error);
+        throw { status: false, data: error };
+      }
     });
+
   }
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// import path, { resolve } from "path";
-// import fs from "fs";
-// import { spawn } from "child_process";
-// import env from "@/config/env";
-// import axios from "axios";
-// import Color from "@/config/color.cli";
-
-// export default class PdfService {
-//   static async retrievePdf(): Promise<any> {
-//     const filename = "schedule.pdf";
-//     const folderName = "assets";
-
-//     const pdfPath = path.join(__dirname, "..", "..", folderName);
-       
-//     // Ensure folder exists
-//     if (!fs.existsSync(pdfPath)) {
-//       fs.mkdirSync(pdfPath, { recursive: true });
-//     }
-
-//     const filepath = path.join(pdfPath, filename);
-
-//     // Download schedule file
-//     try {
-//       const url = env.PDF_URL;
-//       const response = await axios.get<ArrayBuffer>(url, {
-//         responseType: "arraybuffer",
-//       });
-
-//       // Convert ArrayBuffer to Buffer
-//       const buffer = Buffer.from(response.data);
-      
-//       // Write the PDF file
-//       fs.writeFileSync(filepath, buffer);
-//       console.log(`PDF file ${Color.Bright}${Color.FgBlue}${filename}${Color.Reset} downloaded to ${Color.Bright}${Color.FgGreen}${pdfPath}${Color.Reset}`);
-
-//       return new Promise((resolve) => {
-//         resolve(filepath);
-//       });
-
-//     } catch (error) {
-//       console.error("Error downloading PDF:", error);
-//       return new Promise((reject) => {
-//         reject(error);
-//       });
-//     }
-//   }
-
-
-//   static async extractPdf(): Promise<any> {
-//     const pdfParseScript = "parse_pdf.py";
-//     const utilsPath = path.join(__dirname, "..", "utils");
-
-//     // Retrieve PDF file 
-//     const targetFile = await PdfService.retrievePdf();
-
-//     const filename = path.basename(targetFile);
-    
-//     if (!targetFile) {
-//       throw new Error(`File not found: ${filename}`);
-//     }
-    
-//     const scriptPath = path.join(utilsPath, pdfParseScript);
-
-
-//     const python = spawn("python3", [scriptPath, targetFile]);
-
-//     let output = "";
-//     let errorOutput = "";
-
-//     python.stdout.on("data", (data) => {
-//       output += data.toString();
-//     });
-
-//     python.stderr.on("data", (data) => {
-//       errorOutput += data.toString();
-//     });
-
-//     python.on("close", (code) => {
-//       if (code !== 0) {
-//         console.error("Python error output:", errorOutput);
-//         throw new Error(errorOutput || `Python exited with code ${code}`);
-//       }
-      
-//       const data = output.slice(10, -3);                    
-//       const result = (JSON.parse(output)).data; 
-
-//       return new Promise((resolve) => {
-//         resolve({ status: true, data: result });
-//       });
-//     });
-
-    
-//   }
-// }
-
-
-
-
-
-// import path from "path";
-// import fs from "fs";
-// import { spawn } from "child_process";
-
-// export default class PdfService {
-//   static async retrievePdf(file: string): Promise<any> {
-
-//   }
-
-//   static async extractPdf(): Promise<any> {
-//     const folderName = "assets";
-//     const extension = ".pdf";
-//     const filename = "schedule.pdf";
-//     const pdfParseScript = "parse_pdf.py";
-
-//     const pdfPath = path.join(__dirname, "..", "..", folderName);
-//     const utilsPath = path.join(__dirname, "..", "utils");
-
-//     // Ensure folder exists
-//     if (!fs.existsSync(pdfPath)) {
-//       fs.mkdirSync(pdfPath, { recursive: true });
-//     }
-
-//     // Retrieve PDF file 
-
-
-//     // Read all .pdf files in the folder
-//     const files = fs
-//       .readdirSync(pdfPath)
-//       .filter((file) => path.extname(file).toLowerCase() === extension);
-
-//     // Find the target file
-//     const targetFile = files.find((file) => file === filename);
-
-//     if (!targetFile) {
-//       throw new Error(`File not found: ${filename}`);
-//     }
-
-//     const fullPath = path.join(pdfPath, targetFile);
-//     const scriptPath = path.join(utilsPath, pdfParseScript);
-
-//     return new Promise((resolve, reject) => {
-//       const python = spawn("python3", [scriptPath, fullPath]);
-
-//       let output = "";
-//       let errorOutput = "";
-
-//       python.stdout.on("data", (data) => {
-//         output += data.toString();
-//       });
-
-//       python.stderr.on("data", (data) => {
-//         errorOutput += data.toString();
-//       });
-
-//       python.on("close", (code) => {
-//         if (code !== 0) {
-//           console.error("Python error output:", errorOutput);
-//           return reject(
-//             new Error(errorOutput || `Python exited with code ${code}`)
-//           );
-//         }
-
-//         try {
-//           const data = output.slice(10, -3);
-          
-//           const result = (JSON.parse(output)).data;
-
-//           if (result.length == 0) {
-//             reject({ status: false, data: new Error(result.error) });
-//           } else {
-//             resolve({ status: true, data: result });
-//           }
-//         } catch (err) {
-//           console.error("Raw Python output:", output);
-//           reject(new Error(`Failed to parse Python output: ${err}`));
-//         }
-//       });
-//     });
-//   }
-// }
