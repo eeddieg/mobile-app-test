@@ -9,7 +9,40 @@ import axios from "axios";
 
 export default class PdfService {
   
-  static resetDownloadFolder(folderPath: string) {
+  // static resetDownloadFolder(folderPath: string) {
+  //   try {
+  //     if (fs.existsSync(folderPath)) {
+  //       const res = fs.rmSync(folderPath, { recursive: true })
+  //       if (res == undefined) {
+  //         fs.mkdirSync(folderPath, { recursive: true });
+  //         return {
+  //           status: true,
+  //           message: "Folder reset successfully."
+  //         }
+  //       } else {
+  //         return {
+  //           status: false,
+  //           message: "Folder can not be reset."
+  //         }
+  //       }
+  //     } else {
+  //         fs.mkdirSync(folderPath, { recursive: true });
+  //         return {
+  //           status: true,
+  //           message: "Folder reset successfully."
+  //         }
+  //     }
+  //   } catch (error) {
+  //     const folderName = path.dirname(folderPath);
+  //     return {
+  //       status: false,
+  //       message: `Error in deleting folder ${folderName}`,
+  //       error
+  //     }
+  //   }
+  // }
+
+    static createDownloadFolder(folderPath: string) {
     try {
       if (fs.existsSync(folderPath)) {
         const res = fs.rmSync(folderPath, { recursive: true })
@@ -17,7 +50,7 @@ export default class PdfService {
           fs.mkdirSync(folderPath, { recursive: true });
           return {
             status: true,
-            message: "Folder reset successfully."
+            message: "Folder already existed. It was deleted and created again successfully."
           }
         } else {
           return {
@@ -29,7 +62,38 @@ export default class PdfService {
           fs.mkdirSync(folderPath, { recursive: true });
           return {
             status: true,
-            message: "Folder reset successfully."
+            message: "Folder created successfully."
+          }
+      }
+    } catch (error) {
+      const folderName = path.dirname(folderPath);
+      return {
+        status: false,
+        message: `Error in deleting folder ${folderName}`,
+        error
+      }
+    }
+  }
+
+    static deleteDownloadFolder(folderPath: string) {
+    try {
+      if (fs.existsSync(folderPath)) {
+        const res = fs.rmSync(folderPath, { recursive: true })
+        if (res == undefined) {
+          return {
+            status: true,
+            message: "Folder deleted successfully."
+          }
+        } else {
+          return {
+            status: false,
+            message: "Folder can not be deleted."
+          }
+        }
+      } else {
+          return {
+            status: true,
+            message: "Folder does not exist."
           }
       }
     } catch (error) {
@@ -48,12 +112,12 @@ export default class PdfService {
     const pdfPath = path.join(__dirname, "..", "..", folderName);
     
     // delete download folder, if exists and then create it again
-    const res = PdfService.resetDownloadFolder(pdfPath)
+    PdfService.deleteDownloadFolder(pdfPath)
+    PdfService.createDownloadFolder(pdfPath)
 
     fs.mkdirSync(pdfPath, { recursive: true });
 
     const filepath = path.join(pdfPath, filename);
-
 
     // Download schedule file
     try {
@@ -94,7 +158,6 @@ export default class PdfService {
     const utilsPath = path.join(__dirname, "..", "utils");
     const scriptPath = path.join(utilsPath, pdfParseScript);
     
-
     const pdfPath = path.dirname(filepath);
 
     return new Promise((resolve, reject) => {
@@ -125,8 +188,6 @@ export default class PdfService {
 
           try {
             const result = JSON.parse(output).data;
-
-            console.log("result: ", result);
 
             if (!result || result.length === 0) {
               return reject({ status: false, data: result });

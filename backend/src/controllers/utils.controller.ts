@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import PdfService from "@/services/pdf.service";
-// import PdfFile from "@/model/pdf.model";
+import path from "path";
 
 export default class UtilsController {
 
@@ -22,6 +22,9 @@ export default class UtilsController {
 
       const filepath = fetchResponse.filepath as string;
       const extractResponse = await PdfService.extractPdf(filepath);
+      
+      const folderpath = path.dirname(filepath);
+      PdfService.deleteDownloadFolder(folderpath);
 
       if (extractResponse == undefined) {
         res.status(200).json({
