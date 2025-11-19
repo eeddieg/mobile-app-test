@@ -126,6 +126,8 @@ export default class PdfService {
           try {
             const result = JSON.parse(output).data;
 
+            console.log("result: ", result);
+
             if (!result || result.length === 0) {
               return reject({ status: false, data: result });
             }
