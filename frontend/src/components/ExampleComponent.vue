@@ -10,6 +10,14 @@
     <p>Active: {{ active ? 'yes' : 'no' }}</p>
     <p>Clicks on todos: {{ clickCount }}</p>
   </div>
+  <div>
+    <q-btn
+      id="pdf-button"
+      color="primary"
+      label="Show PDF"
+      @click="fetchPdf"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -34,4 +42,9 @@ function increment() {
 }
 
 const todoCount = computed(() => props.todos.length);
+
+function fetchPdf() {
+  console.log("fetchPdf function")
+  // await store.pdfStore.fetchPdfFile();
+}
 </script>
