@@ -4,16 +4,16 @@ import type { RouteRecordRaw } from 'vue-router';
 const indexRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'home',
+    name: 'main-home',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/IndexPage.vue') }],
+    children: [{ path: '', name: "home", component: () => import('pages/IndexPage.vue') }],
   },
   // ...wpRoutes,
   {
     path: '/test',
-    name: 'test',
+    name: 'main-test',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/WPContentPage.vue') }],
+    children: [{ path: '', name: "test", component: () => import('pages/WPContentPage.vue') }],
   },
   {
     path: '/:catchAll(.*)*',

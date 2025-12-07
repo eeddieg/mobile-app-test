@@ -1,0 +1,232 @@
+<template>
+  <q-table
+    :rows="props.rows"
+    :columns="props.columns"
+    row-key="id"
+    :loading="props.loading"
+    flat
+    dense
+    bordered
+    class="q-pa-md"
+  >
+    <template #body-cell-actions="props">
+      <q-td>
+        <q-btn
+          flat
+          round
+          icon="visibility"
+          color="primary"
+          @click="$emit('view', props.row)"
+        />
+        <q-btn
+          flat
+          round
+          icon="edit"
+          color="amber"
+          @click="$emit('edit', props.row)"
+        />
+        <q-btn
+          flat
+          round
+          icon="delete"
+          color="negative"
+          @click="$emit('delete', props.row)"
+        />
+      </q-td>
+    </template>
+  </q-table>
+</template>
+
+<script setup lang="ts">
+import type { QTableProps } from "quasar"
+
+interface Props {
+  columns: QTableProps["columns"]
+  rows: QTableProps["rows"]
+  loading?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  loading: false,
+})
+
+// Emits
+defineEmits<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (e: "view", row: any): void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (e: "edit", row: any): void
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (e: "delete", row: any): void
+}>()
+</script>
+
+<style scoped></style>
+
+
+
+============================================================
+
+    <template>
+  <div class="q-pa-md">
+    <!-- Button to fetch PDF -->
+    <div class="row justify-center q-mb-md">
+      <q-btn
+        color="primary"
+        :label="buttonLabel"
+        @click="fetchPdf"
+      />
+    </div>
+
+    <!-- Table content -->
+    <div v-if="showTableContents">
+      <!-- Mobile dropdown -->
+      <div v-if="isMobile" style="margin-bottom: 8px; width: 150px;">
+        <q-select
+          v-model="activeTab"
+          :options="floorOptions"
+          option-value="value"
+          option-label="label"
+          label="Select Floor"
+          outlined
+          dense
+          hide-dropdown-icon
+          style="width: 100%;"
+        />
+      </div>
+
+      <!-- Desktop tabs -->
+      <q-tabs
+        v-else
+        v-model="activeTab"
+        dense
+        class="text-teal bg-grey-2"
+        align="justify"
+      >
+        <q-tab
+          v-for="floor in floors"
+          :key="floor"
+          :name="floor"
+          :label="floor"
+        />
+      </q-tabs>
+
+      <!-- Tab panels / tables -->
+      <q-tab-panels v-model="activeTab" animated>
+        <q-tab-panel
+          v-for="floor in floors"
+          :key="floor"
+          :name="floor"
+        >
+          <div style="overflow-x:auto;">
+            <base-table-component
+              :columns="columns"
+              :rows="floorRows[floor] || []"
+              :loading="false"
+            />
+          </div>
+        </q-tab-panel>
+      </q-tab-panels>
+
+      <i>{{ footer }}</i>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { pdfStore } from 'src/stores/pdf.store';
+import { screenStore } from "src/stores/screen.store";
+import BaseTableComponent from './BaseTableComponent.vue';
+import type { QTableProps } from "quasar";
+
+// Stores
+const pdfStoreInstance = pdfStore();
+const screenStoreInstance = screenStore();
+
+// Reactive state
+const showTableContents = ref(false);
+const columns = ref<QTableProps["columns"]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const rows = ref<any[]>([]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const floorRows = ref<Record<string, any[]>>({});
+const floors = ref<string[]>([]);
+const activeTab = ref("");
+const footer = ref("");
+
+// Computed
+const buttonLabel = computed(() =>
+  showTableContents.value ? "Hide Data" : "Show Data"
+);
+const isMobile = computed(() => screenStoreInstance.isMobile);
+const floorOptions = computed(() => floors.value.map(f => ({ label: f, value: f })));
+
+// Detect device on mount
+onMounted(() => {
+  screenStoreInstance.detectDevice();
+  if (floors.value.length) activeTab.value = floors.value[0] as string;
+});
+
+// Fetch PDF and populate table
+async function fetchPdf() {
+  const res = await pdfStoreInstance.getPdfFile();
+
+  if (res?.statusCode === 200) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = res.data.filter((row: any) => typeof row === "object");
+
+    // Create columns
+    const keys = Object.keys(data[0]);
+    columns.value = makeColumnsFromKeys(keys);
+
+    // Prepare rows
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rows.value = data.map((row: any) => clearRowData(row));
+
+    // Footer
+    footer.value = rows.value[rows.value.length - 1]?.footer_text || "";
+
+    // Group by floor
+    floorRows.value = groupByFloor(data);
+    floors.value = Object.keys(floorRows.value);
+    activeTab.value = floors.value[0] || "";
+
+    showTableContents.value = true;
+  }
+}
+
+// Create QTable columns from keys
+function makeColumnsFromKeys(keys: string[]): QTableProps["columns"] {
+  return keys
+    .filter(key => !key.startsWith("_"))
+    .map(key => ({
+      name: key,
+      label: key,
+      field: key,
+      align: "left" as const,
+      sortable: true,
+    }));
+}
+
+// Clean row data (remove keys starting with _)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function clearRowData(row: any) {
+  return Object.fromEntries(
+    Object.entries(row).filter(([key]) => !key.startsWith("_"))
+  );
+}
+
+// Group rows by floor
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function groupByFloor(data: any[]) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data.reduce((acc: any, row) => {
+    const floor = row["ΟΡΟΦΟΣ"];
+    if (!floor) return acc;
+    if (!acc[floor]) acc[floor] = [];
+    acc[floor].push(clearRowData(row));
+    return acc;
+  }, {});
+}
+</script>
