@@ -1,5 +1,4 @@
-import { defineStore } from "pinia"
-import { useQuasar } from "quasar"
+import { defineStore } from "pinia";
 
 export const screenStore = defineStore("screenStore", {
   persist: true,
@@ -7,7 +6,7 @@ export const screenStore = defineStore("screenStore", {
   state: () => ({
     isDesktop: false,
     isMobile: false,
-    screenSize: {},
+    screenWidth: 0,
   }),
 
   actions: {
@@ -17,35 +16,22 @@ export const screenStore = defineStore("screenStore", {
     setMobileStatus(state: boolean) {
       this.isMobile = state;
     },
-    setScreenSize(sizeObject: object) {
-      this.screenSize = {};
-      this.screenSize = sizeObject;
+    setScreenWidth(width: number) {
+      this.screenWidth = width;
     },
+
     detectDevice() {
-      const $q = useQuasar();
-
-      const sizeObject = {
-        qt: $q.screen.gt,
-        lt: $q.screen.lt,
-      }
-
-      // console.log("DESKTOP: ", $q.platform.is.desktop);
-      // console.log("MOBILE: ", $q.platform.is.mobile);
-      // console.log("ScreenSize: ", sizeObject);
-
-      if ($q.platform.is.mobile) {
-        this.setDesktopStatus(false);
-        this.setMobileStatus(true);
-
-      }
-      if ($q.platform.is.desktop) {
-        this.setDesktopStatus(true);
-        this.setMobileStatus(false);
-      }
-      this.setScreenSize(sizeObject);
+      const width = window.innerWidth;
+      this.screenWidth = width;
+      this.isMobile = width < 768;
+      this.isDesktop = width >= 768;
     },
-  },
 
-  getters: {},
-
-})
+    updateScreenWidth: function (this: void) {
+      const store = screenStore();
+      store.screenWidth = window.innerWidth;
+      store.isMobile = window.innerWidth < 768;
+      store.isDesktop = window.innerWidth >= 768;
+    }
+  }
+});

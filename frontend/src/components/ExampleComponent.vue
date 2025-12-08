@@ -1,68 +1,109 @@
 <template>
-  <div class="q-pa-md flex column items-center justify-center" style="min-height: 100vh;">
+  <div class="page-container">
 
-    <!-- Button -->
-    <div class="q-mb-md">
-      <q-btn color="primary" :label="buttonLabel" @click="fetchPdf" />
+    <!-- Loading -->
+    <div class="q-mb-md" v-if="!isButtonVisible">
+      <p>Ανάκτηση προγράμματος. Παρακαλώ περιμένετε...</p>
     </div>
 
-    <div v-if="showTableContents" class="q-mb-md flex column items-center justify-center">
+    <!-- Content -->
+    <div v-else class="content-wrapper">
 
-      <!-- Dropdown for mobile -->
-      <div v-if="isMobile" class="q-mb-sm flex justify-center" style="width: 150px;">
-        <q-select
-          v-model="activeTab"
-          :options="floorOptions"
-          label="Όροφος"
-          option-value="value"
-          option-label="label"
-          emit-value map-options
-          outlined dense hide-dropdown-icon
-          style="width: 100%;"
-        />
+      <div v-if="showTableContents" class="inner-wrapper">
+
+        <!-- Header -->
+        <div class="header-wrapper">
+
+          <!-- Mobile dropdown -->
+          <div v-if="isMobile" class="mobile-select">
+            <q-select
+              v-model="activeTab"
+              :options="floorOptions"
+              label="Όροφος"
+              option-value="value"
+              option-label="label"
+              emit-value
+              map-options
+              outlined
+              dense
+            />
+          </div>
+
+          <!-- Desktop tabs -->
+          <div v-else class="desktop-tabs">
+            <q-tabs
+              v-model="activeTab"
+              dense
+              class="text-teal bg-grey-2"
+              align="justify"
+            >
+              <q-tab
+                v-for="floor in floors"
+                :key="floor"
+                :name="floor"
+                :label="floor"
+              />
+            </q-tabs>
+          </div>
+        </div>
+
+        <!-- Table Area -->
+        <div class="table-area">
+
+          <!-- Desktop -->
+          <div v-if="!isMobile" class="desktop-table">
+            <q-tab-panels v-model="activeTab" animated>
+              <q-tab-panel
+                v-for="floor in floors"
+                :key="floor"
+                :name="floor"
+              >
+                <base-table-component
+                  :columns="columns"
+                  :rows="floorRows[floor]!"
+                  :isMobile="false"
+                />
+              </q-tab-panel>
+            </q-tab-panels>
+          </div>
+
+          <!-- Mobile -->
+          <div v-else class="mobile-table">
+            <q-tab-panels v-model="activeTab" animated>
+              <q-tab-panel
+                v-for="floor in floors"
+                :key="floor"
+                :name="floor"
+              >
+                <base-table-component
+                  :columns="columns"
+                  :rows="floorRows[floor]!"
+                  :isMobile="true"
+                />
+              </q-tab-panel>
+            </q-tab-panels>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-area">
+          <i>{{ footer }}</i>
+        </div>
+
       </div>
-
-      <!-- Tabs for desktop -->
-      <div v-else class="q-mb-sm flex justify-center" style="width: 80%;">
-        <q-tabs
-          v-model="activeTab"
-          dense
-          class="text-teal bg-grey-2"
-          align="justify"
-          style="width: 100%; margin-bottom: 8px;"
-        >
-          <q-tab v-for="floor in floors" :key="floor" :name="floor" :label="floor" />
-        </q-tabs>
-      </div>
-
-      <!-- Table -->
-      <div class="q-mb-sm flex justify-center" style="overflow-x:auto; width: 85%;">
-        <q-tab-panels v-model="activeTab" animated style="width: 100%;">
-          <q-tab-panel v-for="floor in floors" :key="floor" :name="floor">
-            <base-table-component :columns="columns" :rows="floorRows[floor]!" :isMobile />
-          </q-tab-panel>
-        </q-tab-panels>
-      </div>
-
-      <!-- Footer -->
-      <div class="q-mb-sm flex justify-center" style="overflow-x:auto; width: 70%;">
-        <i>{{ footer }}</i>
-      </div>
-
     </div>
   </div>
 </template>
 
-
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { pdfStore } from 'src/stores/pdf.store';
 import { screenStore } from "src/stores/screen.store";
 import BaseTableComponent from './BaseTableComponent.vue';
 import type { QTableProps } from "quasar";
 
 const pdfStoreInstance = pdfStore();
-const screenStoreInstance = screenStore();
+const screen = screenStore();
 
 const showTableContents = ref(false);
 const columns = ref<QTableProps["columns"]>([]);
@@ -74,34 +115,47 @@ const floors = ref<string[]>([]);
 const activeTab = ref("");
 const footer = ref("");
 
-const buttonLabel = computed(() =>
-  showTableContents.value ? "Hide Data" : "Show Data"
+const isMobile = computed(() => screen.isMobile);
+
+const floorOptions = computed(() =>
+  floors.value.map(f => ({ label: f, value: f }))
 );
-const isMobile = computed(() => screenStoreInstance.isMobile);
-const floorOptions = computed(() => floors.value.map(f => ({ label: f, value: f })));
+
+const isButtonVisible = computed(() => {
+  return pdfStoreInstance.pdfData.length > 0;
+});
+
+watch(isButtonVisible, () => {
+  showPdf();
+});
+
+// resize listener
+const resizeHandler = () => {
+  screen.updateScreenWidth();
+};
 
 onMounted(() => {
-  screenStoreInstance.detectDevice()
-  if (floors.value.length) activeTab.value = floors.value[0] as string;
-})
+  screen.detectDevice();
+  window.addEventListener("resize", resizeHandler);
+});
 
-async function fetchPdf() {
-  let rawData = [];
-  rawData = pdfStoreInstance.pdfData;
+onUnmounted(() => {
+  window.removeEventListener("resize", resizeHandler);
+});
 
-  if (JSON.parse(localStorage.getItem('pdfStore')!).pdfData.length === 0) {
-    console.log("Fetching PDF file...");
-    rawData = await pdfStoreInstance.getPdfFile();
-  }
+// Center container width = 90% of screen
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const containerWidth = computed(() => screen.screenWidth * 0.9 + "px");
 
+
+function showPdf() {
+  const raw = pdfStoreInstance.pdfData;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data = rawData.filter((row: any) => typeof row === "object");
+  const data = raw.filter((row: any) => typeof row === "object");
 
-  // Create columns
   const keys = Object.keys(data[0]);
   columns.value = makeColumnsFromKeys(keys);
 
-  // Prepare rows and add index id for grouping in mobile expanded view
   let index = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rows.value = data.map((row: any) => ({
@@ -109,10 +163,8 @@ async function fetchPdf() {
     ...clearRowData(row)
   }));
 
-  // Footer
   footer.value = rows.value[rows.value.length - 1].footer_text;
 
-  // Group by floor
   floorRows.value = groupByFloor(rows.value);
   floors.value = Object.keys(floorRows.value);
   activeTab.value = floors.value[0] || "";
@@ -127,7 +179,7 @@ function makeColumnsFromKeys(keys: string[]): QTableProps["columns"] {
       name: key,
       label: key,
       field: key,
-      align: "center" as const,
+      align: "left",
       sortable: true,
     }));
 }
@@ -144,13 +196,67 @@ function groupByFloor(data: any[]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data.reduce((acc: any, row) => {
     const floor = row["ΟΡΟΦΟΣ"];
-
     if (!floor) return acc;
     if (!acc[floor]) acc[floor] = [];
-
     acc[floor].push(clearRowData(row));
     return acc;
   }, {});
 }
-
 </script>
+
+<style scoped>
+.page-container {
+  min-height: 100vh;
+  width: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.inner-wrapper {
+  width: 90%;
+  max-width: 1200px;
+}
+
+.header-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-select {
+  width: 40%;
+  min-width: 180px;
+}
+
+.desktop-tabs {
+  width: 60%;
+}
+
+.table-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.desktop-table {
+  width: 100%;
+}
+
+.mobile-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.footer-area {
+  text-align: center;
+  margin-top: 12px;
+}
+</style>
