@@ -3,7 +3,9 @@
 
     <!-- Loading -->
     <div class="q-mb-md" v-if="!isButtonVisible">
-      <p>Ανάκτηση προγράμματος. Παρακαλώ περιμένετε...</p>
+      <p class="responsive-text">
+        Ανάκτηση προγράμματος. Παρακαλώ περιμένετε...
+      </p>
     </div>
 
     <!-- Content -->
@@ -26,6 +28,7 @@
               map-options
               outlined
               dense
+              class="responsive-text"
             />
           </div>
 
@@ -34,7 +37,7 @@
             <q-tabs
               v-model="activeTab"
               dense
-              class="text-teal bg-grey-2"
+              class="text-teal bg-grey-2 responsive-text"
               align="justify"
             >
               <q-tab
@@ -42,6 +45,7 @@
                 :key="floor"
                 :name="floor"
                 :label="floor"
+                class="responsive-text"
               />
             </q-tabs>
           </div>
@@ -62,6 +66,7 @@
                   :columns="columns"
                   :rows="floorRows[floor]!"
                   :isMobile="false"
+                  class="responsive-text"
                 />
               </q-tab-panel>
             </q-tab-panels>
@@ -79,6 +84,7 @@
                   :columns="columns"
                   :rows="floorRows[floor]!"
                   :isMobile="true"
+                  class="responsive-text"
                 />
               </q-tab-panel>
             </q-tab-panels>
@@ -87,7 +93,7 @@
 
         <!-- Footer -->
         <div class="footer-area">
-          <i>{{ footer }}</i>
+          <i class="responsive-text">{{ footer }}</i>
         </div>
 
       </div>
@@ -101,6 +107,10 @@ import { pdfStore } from 'src/stores/pdf.store';
 import { screenStore } from "src/stores/screen.store";
 import BaseTableComponent from './BaseTableComponent.vue';
 import type { QTableProps } from "quasar";
+
+defineOptions({
+  name: "ExampleComponent"
+})
 
 const pdfStoreInstance = pdfStore();
 const screen = screenStore();
@@ -205,6 +215,8 @@ function groupByFloor(data: any[]) {
 </script>
 
 <style scoped>
+
+/* PAGE LAYOUT */
 .page-container {
   min-height: 100vh;
   width: 100%;
@@ -214,6 +226,7 @@ function groupByFloor(data: any[]) {
   align-items: center;
 }
 
+/* CENTER CONTENT */
 .content-wrapper {
   width: 100%;
   display: flex;
@@ -225,38 +238,62 @@ function groupByFloor(data: any[]) {
   max-width: 1200px;
 }
 
+/* HEADER */
 .header-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
 }
 
+/* MOBILE SELECT */
 .mobile-select {
-  width: 40%;
-  min-width: 180px;
+  width: 30%;
+  min-width: 120px;
 }
 
+/* DESKTOP TABS */
 .desktop-tabs {
   width: 60%;
 }
 
+/* TABLE AREA CENTERED */
 .table-area {
   width: 100%;
   display: flex;
   justify-content: center;
 }
 
+/* DESKTOP TABLE FULL WIDTH */
 .desktop-table {
   width: 100%;
 }
 
+/* MOBILE TABLE ADAPTS TO SCREEN WIDTH */
 .mobile-table {
-  width: 100%;
+  width: 97vw !important; /* responsive width */
+  max-width: 100%;
   overflow-x: auto;
 }
 
+/* FOOTER */
 .footer-area {
   text-align: center;
   margin-top: 12px;
+}
+
+/* =============================== */
+/* RESPONSIVE TYPOGRAPHY */
+/* scales automatically with screen width */
+/* =============================== */
+.responsive-text {
+  font-size: clamp(10px, 2vw, 16px); /* min 12px, max 18px */
+  line-height: 1.3;
+}
+
+/* OPTIONAL: make tabs + selects follow responsive text */
+.q-tab,
+.q-select,
+.q-tab__label {
+  font-size: clamp(12px, 2vw, 18px) !important;
 }
 </style>

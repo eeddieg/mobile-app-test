@@ -35,10 +35,14 @@ if (fs.existsSync(localEnvPath)) {
 
 // Define schema for required environment variables
 const EnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  BACKEND_SERVER_BASE_URL: z.string().min(1, "BACKEND_SERVER_BASE_URL is not set"),
   BASE_API_URL: z.string().min(1, "BASE_API_URL is not set"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PDF_URL: z.string().min(1, "PDF_URL is not set"),
   PORT: z.coerce.number().default(port),
+  WP_BASE: z.string().min(1, "WP_BASE is not set"),
+  WP_USER: z.string().min(1, "WP_USER is not set"),
+  WP_APP_PASSWORD: z.string().min(1, "WP_APP_PASSWORD is not set"),
 });
 
 // Parse and validate

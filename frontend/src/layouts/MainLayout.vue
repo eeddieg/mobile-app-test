@@ -31,15 +31,15 @@ import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink
 
 const linksList: EssentialLinkProps[] = [
   {
-    title: 'Home page',
+    title: 'ΑΡΧΙΚΗ',
     caption: 'Home screen',
     icon: 'home',
     link: { name: 'home' },
   },
   {
-    title: 'WP test page',
-    caption: 'WP website content',
-    icon: 'link',
+    title: 'ΠΡΟΓΡΑΜΜΑ ΙΑΤΡΕΙΩΝ',
+    caption: 'ΕΒΔΟΜΑΔΙΑΙΟ ΠΡΟΓΡΑΜΜΑ',
+    icon: 'schedule',
     link: { name: 'test' },
   },
 

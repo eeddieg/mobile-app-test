@@ -9,16 +9,16 @@
     bordered
     hide-bottom
     :pagination="{ rowsPerPage: 0 }"
-    class="mobile-table"
+    class="mobile-table responsive"
   >
     <template #body="slotProps">
       <q-tr :props="slotProps">
 
-        <!-- Render the limited columns -->
+        <!-- Render the main columns -->
         <q-td
-          v-for="(col, index)  in computedColumns"
+          v-for="(col, index) in computedColumns"
           :key="index"
-          :style="col.style"
+          :class="col.classes"
         >
           <!-- info column -->
           <template v-if="col.name === 'info'">
@@ -40,7 +40,7 @@
       </q-tr>
 
       <!-- Expanded area -->
-      <q-tr v-show="expanded.includes(slotProps.key)">
+      <q-tr v-show="expanded.includes(slotProps.row.id)">
         <q-td colspan="100%">
           <div class="q-pa-sm">
             <div
@@ -52,7 +52,7 @@
               {{
                 typeof col.field === "function"
                   ? col.field(slotProps.row)
-                  : slotProps.row[col.field]
+                  : slotProps.row[col.field as string]
               }}
             </div>
           </div>
@@ -65,7 +65,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { QTableProps } from "quasar";
-import { screenStore } from "src/stores/screen.store";
 
 interface Props {
   columns: QTableProps["columns"];
@@ -77,77 +76,88 @@ const props = withDefaults(defineProps<Props>(), {
   isMobile: false,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const expanded = ref<any[]>([]);
+// Manage row expansion
+const expanded = ref<number[]>([]);
 
-const screenStoreInstance = screenStore();
-
-const containerWidth = computed(() => {
-  return Math.min(screenStoreInstance.screenWidth * 0.9, 1200) + "px";
-});
-
+// Column widths for mobile
 const computedColumns = computed(() => {
   const base = props.columns || [];
-
   if (!props.isMobile) return base;
-
-  const width = Number(containerWidth.value);
-
-  let col1 = "30%";
-  let col2 = "60%";
-  let info = "20%";
-
-  if (width >= 400 && width < 600) {
-    col1 = "35%";
-    col2 = "60%";
-    info = "20%";
-  }
-
-  if (width >= 600 && width < 800) {
-    col1 = "40%";
-    col2 = "60%";
-    info = "10%";
-  }
 
   return [
     {
       ...base[0],
-      style: `width: ${col1}; max-width: ${col1};`
+      classes: "mobile-column-small"
     },
     {
       ...base[1],
-      style: `width: ${col2}; max-width: ${col2};`
+      classes: "mobile-column-medium"
     },
     {
       name: "info",
       label: "",
       field: () => "",
-      align: "center" as const,
+      align: "left" as const,
       sortable: false,
-      style: `width: ${info}; max-width: ${info}; text-align:center;`
+      classes: "mobile-column-info"
     }
   ] as QTableProps["columns"];
 });
 
+// Remaining columns for expanded mobile view
 const remainingColumns = computed(() => {
   return props.isMobile ? props.columns!.slice(2) : [];
 });
 
-function toggleExpand(key: string | number) {
-  expanded.value = expanded.value[0] === key ? [] : [key];
+function toggleExpand(rowId: number) {
+  expanded.value = expanded.value[0] === rowId ? [] : [rowId];
 }
 </script>
-
 
 <style scoped>
 .mobile-table {
   width: 100%;
   text-align: center;
 }
+
+/* Table cell font smaller */
+.q-table tbody tr td {
+  font-size: clamp(10px, 1.5vw, 14px);
+  line-height: 1.3;
+}
+
+/* Header font slightly bigger */
+.q-table thead tr th {
+  font-size: clamp(12px, 2vw, 16px);
+}
+
+/* Mobile: allow wrapping for long text */
 @media (max-width: 768px) {
   .q-table td {
     white-space: normal !important;
     word-break: break-word !important;
+    overflow-wrap: break-word !important;
   }
+}
+
+/* COLUMN WIDTH CLASSES */
+.mobile-column-small {
+  width: 10vw !important;
+  min-width: 50px !important;
+  max-width: 60px !important;
+  text-align: center;
+}
+
+.mobile-column-medium {
+  width: 50vw !important;
+  min-width: 120px !important;
+  text-align: left;
+}
+
+.mobile-column-info {
+  width: 12vw !important;
+  min-width: 40px !important;
+  max-width: 60px !important;
+  text-align: center;
 }
 </style>

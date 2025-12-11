@@ -1,16 +1,32 @@
 import axios from "axios";
+import env from "@/config/env";
 import dotenv from "dotenv";
 
-dotenv.config();
+let Axios: ReturnType<typeof axios.create>;
 
-const headers = {
-  "Content-Type": "application/json",
-};
+try {
+  if (!env.BACKEND_SERVER_BASE_URL || !env.PORT || !env.BASE_API_URL) {
+    throw new Error("Server instance variable are missing in environment variables");
+  }
 
-const Axios = axios.create({
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  baseURL: process.env.BACKEND_SERVER_BASE_URL || "http://localhost:3000/api",
-  headers,
-});
+  const baseUrl = env.BACKEND_SERVER_BASE_URL;
+  const port = env.PORT;
+  const apiEndpoint = env.BASE_API_URL;
+  const url = baseUrl + ":" + port + "/" + apiEndpoint;
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  
+  Axios = axios.create({
+    baseURL: url,
+    headers,
+  });
+  
+} catch (error) {
+  console.error("Failed to initialize server instance:", error);
+  throw error;
+}
+
 
 export default Axios;
