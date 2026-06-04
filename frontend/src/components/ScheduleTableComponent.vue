@@ -48,12 +48,14 @@
               :key="col.name"
               class="q-mb-sm"
             >
-              <strong>{{ col.label }}:</strong>
-              {{
-                typeof col.field === "function"
-                  ? col.field(slotProps.row)
-                  : slotProps.row[col.field as string]
-              }}
+              <strong id="mob-table-keys">{{ col.label }}: </strong>
+              <text id="mob-table-values">
+                {{
+                  typeof col.field === "function"
+                    ? col.field(slotProps.row)
+                    : slotProps.row[col.field as string]
+                }}
+              </text>
             </div>
           </div>
         </q-td>
@@ -159,5 +161,19 @@ function toggleExpand(rowId: number) {
   min-width: 40px !important;
   max-width: 60px !important;
   text-align: center;
+}
+
+#mob-table-keys {
+  display: inline-block;
+  width: 150px;
+  font-weight: bold;
+  text-align: left;
+}
+
+#mob-table-values {
+  display: inline-block;
+  text-align: right;
+  font-weight: normal;
+  width: calc(100% - 150px);
 }
 </style>

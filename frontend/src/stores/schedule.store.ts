@@ -1,25 +1,33 @@
 import { defineStore } from "pinia"
 import Axios from "src/services/api.backend";
 
-export const pdfStore = defineStore("pdfStore", {
+export const scheduleStore = defineStore("scheduleStore", {
   persist: true,
 
   state: () => ({
     url: "",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pdfData: [] as any[]
+    scheduleData: [] as any[]
   }),
 
   actions: {
+    async getScheduleData() {
+      if (this.scheduleData.length == 0) {
+        await this.fetchSchedule();
+      }
+      else if (this.scheduleData.length > 0) {
+      return this.scheduleData;
+      }
+    },
     setUrl(url: string) {
       this.url = url;
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    setPdfData(data:any) {
-      this.pdfData = []
-      this.pdfData = data;
+    setScheduleData(data:any) {
+      this.scheduleData = []
+      this.scheduleData = data;
     },
-    async getPdfFile() {
+    async fetchSchedule() {
       const url = Axios.defaults.baseURL + "/utils/get-pdf-file";
       this.setUrl(url);
       try {
@@ -27,11 +35,11 @@ export const pdfStore = defineStore("pdfStore", {
 
         if (res.data.status) {
           const data = this.normalizeTimes(res.data.data)
-          this.setPdfData(data)
+          this.setScheduleData(data)
         }
         return res.data;
       } catch (error) {
-        console.error(error);
+        console.error('getPdfFile failed:', error);
         return null;
       }
     },

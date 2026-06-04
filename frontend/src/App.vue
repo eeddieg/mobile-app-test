@@ -4,12 +4,14 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { pdfStore } from './stores/pdf.store';
+import { scheduleStore } from './stores/schedule.store';
 
-const pdfStoreInstance = pdfStore();
+const pdfStoreInstance = scheduleStore();
 
-onMounted(async () => {
-  await pdfStoreInstance.getPdfFile();
+onMounted(() => {
+  pdfStoreInstance.getScheduleData().catch(err => {
+    console.error('PDF init failed:', err);
+  });
 });
 
 </script>

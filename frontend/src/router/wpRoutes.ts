@@ -2,10 +2,15 @@ import type { RouteRecordRaw } from 'vue-router';
 
 const wpRoutes: RouteRecordRaw[] = [
   {
-    path: '/test',
-    name: 'test',
+    path: '/schedule',
     component: () => import('layouts/MainLayout.vue'),
-    children: [{ path: '', component: () => import('pages/WPContentPage.vue') }],
+    children: [
+      {
+        path: '',
+        name: 'schedule',
+        component: () => import('pages/SchedulePage.vue')
+      }
+    ]
   },
 
 ];

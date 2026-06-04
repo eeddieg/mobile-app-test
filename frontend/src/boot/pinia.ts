@@ -13,7 +13,7 @@
 import { boot } from 'quasar/wrappers'
 import { createPinia } from 'pinia'
 import piniaPersist from 'pinia-plugin-persistedstate'
-import { pdfStore } from 'src/stores/pdf.store'
+import { scheduleStore } from 'src/stores/schedule.store'
 import { screenStore } from 'src/stores/screen.store'
 
 export default boot(({ app }) => {
@@ -36,7 +36,7 @@ export default boot(({ app }) => {
 
     // Reset stores only if no tabs left
     if (tabs.length === 0) {
-      pdfStore().$reset()
+      scheduleStore().$reset()
       screenStore().$reset()
       // reset other stores here
       localStorage.removeItem('active-tabs')

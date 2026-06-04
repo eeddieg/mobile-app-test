@@ -1,8 +1,9 @@
 # Backend
 backend/.DS_Store
 backend/.thumbs.db
-backend/node_modules
+backend/assets
 backend/dist
+backend/node_modules
 
 # Log files
 backend/npm-debug.log*
@@ -17,10 +18,10 @@ backend/*.njsproj
 backend/*.sln
 
 # Environment files
-backend/.env
-backend/.env.local
-backend/.env.development
-backend/.env.production
+#backend/.env
+#backend/.env.local
+#backend/.env.development
+#backend/.env.production
 
 
 #####################
@@ -57,7 +58,7 @@ frontend/*.njsproj
 frontend/*.sln
 
 # local .env files
-frontend/.env
-frontend/.env.local
-frontend/.env.development
-frontend/.env.production
+#frontend/.env
+#frontend/.env.local
+#frontend/.env.development
+#frontend/.env.production

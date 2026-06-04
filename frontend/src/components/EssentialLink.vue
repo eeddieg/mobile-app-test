@@ -1,42 +1,52 @@
 <template>
-  <q-item clickable tag="a" :href="resolvedHref">
-    <q-item-section v-if="icon" avatar>
-      <q-icon :name="icon" />
-    </q-item-section>
+  <q-list>
+    <q-item
+      v-for="link in linksList"
+      :key="link.title"
+      :to="link.link.path"
+      v-bind="link"
+      clickable
+      tag="a"
+    >
+      <q-item-section v-if="link.icon" avatar>
+        <q-icon :name="link.icon" />
+      </q-item-section>
 
-    <q-item-section>
-      <q-item-label>{{ title }}</q-item-label>
-      <q-item-label caption>{{ caption }}</q-item-label>
-    </q-item-section>
-  </q-item>
+      <q-item-section>
+        <q-item-label>{{ link.title }}</q-item-label>
+        <q-item-label caption>{{ link.caption }}</q-item-label>
+      </q-item-section>
+    </q-item>
+  </q-list>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRouter, type RouteLocationRaw } from 'vue-router';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
-export interface EssentialLinkProps {
-  title: string;
-  caption?: string;
-  icon?: string;
-  link?: RouteLocationRaw;
-}
+const linksList = [
+  {
+    title: 'ΑΡΧΙΚΗ',
+    caption: 'Αρχική Σελίδα',
+    icon: 'home',
+    link: { name: 'home', path: '/' },
+  },
+  {
+    title: 'ΠΡΟΓΡΑΜΜΑ ΙΑΤΡΕΙΩΝ',
+    caption: 'ΕΒΔΟΜΑΔΙΑΙΟ ΠΡΟΓΡΑΜΜΑ',
+    icon: 'schedule',
+    link: { name: 'schedule', path: '/schedule' },
+  },
 
-const props = withDefaults(defineProps<EssentialLinkProps>(), {
-  caption: '',
-  link: '#',
-  icon: '',
+];
+
+// function navigate(name: string) {
+//   void router.push({ name });
+// }
+
+router.beforeEach((to, from, next) => {
+  console.log('NAV:', from.fullPath, '->', to.fullPath);
+  next();
 });
-
-const resolvedHref = computed(() => {
-  // If link is a string (path), just return it directly
-  if (typeof props.link === 'string') {
-    return props.link;
-  }
-  // If it's a route object (e.g., { name: 'test' }), resolve it to a full URL
-  return router.resolve(props.link).href;
-});
-
 </script>
