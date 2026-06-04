@@ -3,15 +3,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { scheduleStore } from './stores/schedule.store';
+import { onMounted } from "vue";
+import { scheduleStore } from "./stores/schedule.store";
+// import { pdfStore } from './stores/pdf.store';
 
-const pdfStoreInstance = scheduleStore();
+const scheduleStoreInstance = scheduleStore();
 
-onMounted(() => {
-  pdfStoreInstance.getScheduleData().catch(err => {
-    console.error('PDF init failed:', err);
-  });
+onMounted(async () => {
+  await scheduleStoreInstance.getScheduleData();
 });
 
 </script>

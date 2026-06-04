@@ -135,9 +135,20 @@ const isButtonVisible = computed(() => {
   return scheduleStoreInstance.scheduleData.length > 0;
 });
 
-watch(isButtonVisible, () => {
-  showPdf();
-});
+// watch(isButtonVisible, () => {
+//   showPdf();
+// });
+watch(
+  () => scheduleStoreInstance.scheduleData,
+  (data) => {
+    if (data.length) {
+      showPdf();
+    }
+  },
+  {
+    immediate: true
+  }
+);
 
 // resize listener
 const resizeHandler = () => {
@@ -147,6 +158,10 @@ const resizeHandler = () => {
 onMounted(() => {
   screen.detectDevice();
   window.addEventListener("resize", resizeHandler);
+
+   if (scheduleStoreInstance.scheduleData.length > 0) {
+    showPdf();
+  }
 });
 
 onUnmounted(() => {
@@ -163,6 +178,11 @@ function showPdf() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = raw.filter((row: any) => typeof row === "object");
 
+  if (!data.length) {
+    console.error("No valid schedule data found");
+    return;
+  }
+
   const keys = Object.keys(data[0]);
   columns.value = makeColumnsFromKeys(keys);
 
@@ -173,8 +193,11 @@ function showPdf() {
     ...clearRowData(row)
   }));
 
-  footer.value = rows.value[rows.value.length - 1].footer_text;
-
+  // footer.value = rows.value[rows.value.length - 1].footer_text;
+  footer.value =
+  rows.value.length > 0
+    ? rows.value[rows.value.length - 1].footer_text ?? ""
+    : "";
   floorRows.value = groupByFloor(rows.value);
   floors.value = Object.keys(floorRows.value);
   activeTab.value = floors.value[0] || "";

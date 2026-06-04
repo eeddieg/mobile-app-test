@@ -24,7 +24,6 @@ export const scheduleStore = defineStore("scheduleStore", {
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setScheduleData(data:any) {
-      this.scheduleData = []
       this.scheduleData = data;
     },
     async fetchSchedule() {
