@@ -1,18 +1,10 @@
-import type { RouteRecordRaw } from 'vue-router';
-import wpRoutes from './wpRoutes';
+import type { RouteRecordRaw } from 'vue-router'
+import wpRoutes from './wpRoutes'
 
 const indexRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('layouts/MainLayout.vue'),
-    children: [
-      {
-        path: '',
-        name: "index",
-        component: () => import('pages/IndexPage.vue')
-      }
-    ]
+    redirect: { name: 'posts' },   // just redirect, no duplicate definition
   },
   ...wpRoutes,
   {
@@ -20,6 +12,6 @@ const indexRoutes: RouteRecordRaw[] = [
     name: 'error',
     component: () => import('pages/ErrorNotFound.vue'),
   },
-];
+]
 
-export default indexRoutes;
+export default indexRoutes

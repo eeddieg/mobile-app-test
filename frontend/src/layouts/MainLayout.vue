@@ -3,7 +3,7 @@
     <q-header elevated>
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
-        <q-toolbar-title> Mobile App - Test </q-toolbar-title>
+        <q-toolbar-title> ΕΛΛΗΝΙΚΗ ΑΣΤΥΝΟΜΙΑ - ΔΙΕΥΘΥΝΣΗ ΥΓΕΙΟΝΟΜΙΚΟΥ</q-toolbar-title>
       </q-toolbar>
     </q-header>
 

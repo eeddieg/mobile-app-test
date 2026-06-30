@@ -1,6 +1,14 @@
 <template>
   <div class="page-container">
 
+    <q-item-label v-if="isMobile" class="mobile-select q-pa-md text-center">
+      <q-item-label class="q-mb-md text-h6">{{ props.title }}</q-item-label>
+    </q-item-label>
+    <q-item-label v-else class="q-pa-lg">
+      <q-item-label class="q-mb-md text-h3">{{ props.title }}</q-item-label>
+    </q-item-label>
+
+
     <!-- Loading -->
     <div class="q-mb-md" v-if="!isButtonVisible">
       <p class="responsive-text">
@@ -124,6 +132,9 @@ const floorRows = ref<Record<string, any[]>>({});
 const floors = ref<string[]>([]);
 const activeTab = ref("");
 const footer = ref("");
+const props = defineProps<{
+  title: string;
+}>();
 
 const isMobile = computed(() => screen.isMobile);
 
@@ -144,11 +155,8 @@ watch(
     if (data.length) {
       showPdf();
     }
-  },
-  {
-    immediate: true
   }
-);
+)
 
 // resize listener
 const resizeHandler = () => {
@@ -170,7 +178,7 @@ onUnmounted(() => {
 
 // Center container width = 90% of screen
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const containerWidth = computed(() => screen.screenWidth * 0.9 + "px");
+const containerWidth = computed(() => screen.screenWidth * 1.2 + "px");
 
 
 function showPdf() {

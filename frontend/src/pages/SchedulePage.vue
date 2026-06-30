@@ -8,6 +8,15 @@
 
 <script setup lang="ts">
 import ScheduleComponent from 'components/ScheduleComponent.vue';
+import { onMounted } from 'vue';
+import { scheduleStore } from "../stores/schedule.store";
 
-const title = "Schedule component";
+const scheduleStoreInstance = scheduleStore();
+
+onMounted(async () => {
+  await scheduleStoreInstance.getScheduleData();
+});
+
+
+const title = "Πρόγραμμα Εβδομάδας";
 </script>
