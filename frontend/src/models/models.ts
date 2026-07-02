@@ -145,15 +145,157 @@ export interface CarouselSlide {
   imageUrl: string;
 }
 
+// export interface WpPage {
+//   id: number
+//   slug: string
+//   link: string
+//   title:   { rendered: string }
+//   content: { rendered: string }
+//   excerpt: { rendered: string }
+//   menu_order: number
+//   parent: number
+//   modified: string
+//   status: 'publish' | 'draft'
+// }
+
 export interface WpPage {
   id: number
   slug: string
   link: string
-  title:   { rendered: string }
-  content: { rendered: string }
-  excerpt: { rendered: string }
-  menu_order: number
-  parent: number
+  status: string
+  type: string
+
+  date: string
+  date_gmt: string
   modified: string
-  status: 'publish' | 'draft'
+  modified_gmt?: string
+
+  parent: number
+  menu_order: number
+
+  author: number
+  comment_status: string
+  ping_status: string
+  featured_media: number
+
+  template: string
+
+  title: {
+    rendered: string
+  }
+
+  content: {
+    rendered: string
+    protected: boolean
+  }
+
+  excerpt: {
+    rendered: string
+    protected: boolean
+  }
+
+  guid: {
+    rendered: string
+  }
+
+  class_list?: string[]
+
+  meta?: Record<string, unknown>
+
+  uagb_author_info?: {
+    display_name: string
+    author_link: string
+  }
+
+  uagb_comment_info?: number
+
+  uagb_excerpt?: string
+
+  uagb_featured_image_src?: {
+    full?: string
+    medium?: string
+    large?: string
+    thumbnail?: string
+    medium_large?: string
+  }
+
+  _links?: Record<string, unknown>
 }
+
+// export interface WpPage {
+//   id: number
+//   slug: string
+//   link: string
+//   status: string
+//   type: string
+
+//   date: string
+//   date_gmt: string
+//   modified: string
+//   modified_gmt?: string
+
+//   parent: number
+//   menu_order: number
+
+//   author: number
+//   comment_status: string
+//   ping_status: string
+//   featured_media: number
+
+//   template: string
+
+//   title: {
+//     rendered: string
+//   }
+
+//   content: {
+//     rendered: string
+//     protected: boolean
+//   }
+
+//   excerpt: {
+//     rendered: string
+//     protected: boolean
+//   }
+
+//   guid: {
+//     rendered: string
+//   }
+
+//   class_list?: string[]
+
+//   meta?: Record<string, unknown>
+
+//   uagb_author_info?: {
+//     display_name: string
+//     author_link: string
+//   }
+
+//   uagb_comment_info?: number
+
+//   uagb_excerpt?: string
+
+//   uagb_featured_image_src?: {
+//     full?: string
+//     medium?: string
+//     large?: string
+//     thumbnail?: string
+//     medium_large?: string
+//   }
+
+//   _links?: Record<string, unknown>
+
+//   acf?: {
+//     subtitle?: string
+//     mission_items?: {
+//       letter: string
+//       text: string
+//     }[]
+//     features?: {
+//       icon: string
+//       color: string
+//       title: string
+//       subtitle: string
+//     }[]
+//   }
+// }

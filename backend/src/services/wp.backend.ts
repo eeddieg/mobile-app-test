@@ -4,6 +4,7 @@ import axios from "axios";
 
 let wpApi: ReturnType<typeof axios.create>;
 let wpApiContents: ReturnType<typeof axios.create>;
+let wpApiStyles: ReturnType<typeof axios.create>;
 
 try {
   const wpUser = env.WP_USER;
@@ -22,17 +23,23 @@ try {
     //   Authorization: authHeader,
     // },
   });
-
+  
   wpApiContents = axios.create({
-    baseURL: env.WP_BASE,
+    baseURL: env.WP_CONTENTS,
     // headers: {
-    //   Authorization: authHeader,
-    // },
-  });
-
+      //   Authorization: authHeader,
+      // },
+    });
+    
+    wpApiStyles = axios.create({
+      baseURL: env.WP_SITE,
+      // headers: {
+      //   Authorization: authHeader,
+      // },
+    });
 } catch (error) {
   console.error("Failed to initialize WordPress API client:", error);
   throw error;
 }
  
-export { wpApi, wpApiContents };
+export { wpApi, wpApiContents, wpApiStyles };

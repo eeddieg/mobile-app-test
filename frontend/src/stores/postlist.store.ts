@@ -58,6 +58,18 @@ export const postListStore = defineStore("postListStore", {
         return null;
       }
     },
+    async fetchPostsByCategory(slug: string): Promise<unknown[] | null> {
+      try {
+        const res = await Axios.get(`/wp/posts/category?slug=${encodeURIComponent(slug)}`)
+        if (res.data.statusCode === 200 && res.data.data) {
+          return res.data.data as unknown[]
+        }
+        return null
+      } catch (e) {
+        console.error('fetchPostsByCategory failed:', e)
+        return null
+      }
+    }
   },
   getters: {},
 

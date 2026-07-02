@@ -32,9 +32,6 @@
           :name="item.id"
           :img-src="getSlideImage(item)"
         >
-          <!-- <div class="carousel-caption">
-            {{ item.title?.rendered }}
-          </div> -->
         </q-carousel-slide>
 
       </q-carousel>
@@ -76,7 +73,7 @@
           <div
             v-if="!isExpanded(post.id)"
             class="post-content"
-            v-html="fixWpImageUrls(post.excerpt.rendered)"
+            v-html="makePhoneNumbersClickable(fixWpImageUrls(post.excerpt.rendered))"
           />
 
           <!-- EXPANDED -->
@@ -84,7 +81,7 @@
             <div
               v-if="isExpanded(post.id)"
               class="post-content"
-              v-html="fixWpImageUrls(post.content.rendered)"
+              v-html="makePhoneNumbersClickable(fixWpImageUrls(post.content.rendered))"
             />
           </q-slide-transition>
 
@@ -126,10 +123,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { postListStore } from 'src/stores/postlist.store'
-import { screenStore } from 'src/stores/screen.store'
-import type { MediaItem, WPPostExtended } from '../models/models'
-import { fixWpImageUrls } from 'src/utils/wpContent'
+import { postListStore } from "../stores/postlist.store"
+import { screenStore } from "../stores/screen.store"
+import type { MediaItem, WPPostExtended } from "../models/models"
+import { fixWpImageUrls, makePhoneNumbersClickable  } from "../utils/wpContent"
 
 defineOptions({
   name: 'PostListComponent'
@@ -221,8 +218,6 @@ async function retrieveCarousel(): Promise<void> {
 </script>
 
 <style scoped>
-
-/* PAGE LAYOUT */
 .page-container {
   min-height: 100vh;
   width: 100%;
@@ -233,24 +228,18 @@ async function retrieveCarousel(): Promise<void> {
   flex-direction: column;
   align-items: center;
 }
-
-/* HEADER */
 .header-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
   text-align: center;
 }
-
-/* UNIFIED WRAPPER */
 .inner-wrapper {
   width: 100%;
   max-width: 900px;
   padding: 0 12px;
   box-sizing: border-box;
 }
-
-/* CAROUSEL */
 .carousel-wrapper {
   width: 100%;
   display: flex;
@@ -263,8 +252,6 @@ async function retrieveCarousel(): Promise<void> {
   border-radius: 16px;
   overflow: hidden;
 }
-
-/* CAPTION */
 .carousel-caption {
   position: absolute;
   bottom: 12px;

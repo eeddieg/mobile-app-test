@@ -10,7 +10,10 @@ import Color from "./config/color.cli";
 const app: Express = express();
 
 app.use(cors());
-app.use(helmet());
+// app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

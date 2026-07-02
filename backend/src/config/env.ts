@@ -42,6 +42,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(port),
   WP_BASE: z.string().min(1, "WP_BASE is not set"),
   WP_CONTENTS: z.string().min(1, "WP_CONTENTS is not set"),
+  WP_SITE: z.string().min(1, "WP_SITE is not set"),
   WP_USER: z.string().min(1, "WP_USER is not set"),
   WP_APP_PASSWORD: z.string().min(1, "WP_APP_PASSWORD is not set"),
 });

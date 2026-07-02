@@ -3,7 +3,6 @@
 
     <template v-for="section in navSections" :key="section.title">
 
-      <!-- Section with children → expansion item -->
       <q-expansion-item
         v-if="section.children?.length"
         :icon="section.icon"
@@ -11,6 +10,7 @@
         :caption="section.caption"
         expand-separator
         header-class="text-primary"
+        group="nav-accordion"
       >
         <q-list dense class="q-pl-md">
           <q-item
@@ -31,7 +31,6 @@
         </q-list>
       </q-expansion-item>
 
-      <!-- Top-level leaf item -->
       <q-item
         v-else
         :to="section.path"
@@ -119,13 +118,13 @@ const navSections = [
   },
   {
     title: 'ΝΕΑ & ΕΝΗΜΕΡΩΣΗ',
-    caption: 'Επιστημονικά Άρθρα & Βίντεο',
+    caption: 'Νέα & Ανακοινώσεις',
     icon: 'newspaper',
     children: [
-      { title: 'Νέα & Ανακοινώσεις',  icon: 'campaign',      path: '/posts' },
-      { title: 'Επιστημονικά Άρθρα',  icon: 'science',       path: '/page/arthra' },
-      { title: 'Αιμοδοσία',           icon: 'bloodtype',     path: '/page/aimodosia' },
-      { title: 'Βίντεο',              icon: 'play_circle',   path: '/page/vinteo' },
+      { title: 'ΝΕΑ-ΑΝΑΚΟΙΝΩΣΕΙΣ', icon: 'campaign',    path: '/page/nea-anakoinoseis' },      { title: 'ΕΠΙΣΤΗΜΟΝΙΚΑ ΑΡΘΡΑ', icon: 'science',   path: '/page/arthra' },
+      { title: 'ΣΥΝΕΔΡΙΑ',         icon: 'groups',      path: '/page/synedria' },
+      { title: 'ΑΙΜΟΔΟΣΙΑ',        icon: 'bloodtype',   path: '/page/aimodosia' },
+      { title: 'ΒΙΝΤΕΟ',           icon: 'play_circle', path: '/page/vinteo' },
     ],
   },
   {
@@ -136,77 +135,3 @@ const navSections = [
   },
 ]
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- <template>
-  <q-list>
-    <q-item
-      v-for="link in linksList"
-      :key="link.title"
-      :to="link.link.path"
-      v-bind="link"
-      clickable
-      tag="a"
-    >
-      <q-item-section v-if="link.icon" avatar>
-        <q-icon :name="link.icon" />
-      </q-item-section>
-
-      <q-item-section>
-        <q-item-label>{{ link.title }}</q-item-label>
-        <q-item-label caption>{{ link.caption }}</q-item-label>
-      </q-item-section>
-    </q-item>
-  </q-list>
-</template>
-
-<script setup lang="ts">
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-const linksList = [
-  {
-    title: 'ΑΡΧΙΚΗ',
-    caption: 'Αρχική Σελίδα',
-    icon: 'home',
-    link: { name: 'home', path: '/posts' },
-  },
-  {
-    title: 'ΠΡΟΓΡΑΜΜΑ ΙΑΤΡΕΙΩΝ',
-    caption: 'ΕΒΔΟΜΑΔΙΑΙΟ ΠΡΟΓΡΑΜΜΑ',
-    icon: 'schedule',
-    link: { name: 'schedule', path: '/schedule' },
-  },
-
-];
-
-// function navigate(name: string) {
-//   void router.push({ name });
-// }
-
-router.beforeEach((to, from, next) => {
-  console.log('NAV:', from.fullPath, '->', to.fullPath);
-  next();
-});
-</script> -->

@@ -263,53 +263,155 @@ export default class WpController {
     }
   };
 
-
   static async retrieveMedia(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    let url = req.query.url as string
-
-    if (url.length == 0) {
-      url = env.WP_CONTENTS as string
-    }
+    const url = req.query.url as string | undefined
 
     if (!url) {
-      res.status(400).json({ status: false, message: 'Missing url parameter' })
+      res.status(400).json({ status: false, statusCode: 400, message: 'Missing url parameter', data: null })
       return
     }
 
-    const filename = decodeURIComponent(url).split('/').pop() ?? ''
+    const decoded  = decodeURIComponent(url)
+    const filename = decoded.split('/').pop() ?? ''
 
     if (!filename) {
-      res.status(400).json({ status: false, message: 'Could not extract filename from url' })
+      res.status(400).json({ status: false, statusCode: 400, message: 'Could not extract filename', data: null })
       return
     }
 
-    const response = await WpService.fetchMediaByFilename(filename)
+    const response = await WpService.fetchMediaCandidates(filename)
+
+    if (response == undefined) {
+      res.status(200).json({
+        status: false,
+        statusCode: 200,
+        message: 'WP server: Cannot reach the server.',
+        data: null,
+      })
+      return
+    }
+
+    if (response.status && response.res.status === 200) {
+      res.status(200).json({
+        status: true,
+        statusCode: 200,
+        message: 'Media retrieved successfully.',
+        data: response.res.data,
+      })
+    } else {
+      res.status(200).json({
+        status: false,
+        statusCode: response.res.status,
+        message: response.message,
+        data: null,
+      })
+    }
+  }
+
+  static async retrieveStyle(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+
+    const styleMap: Record<string, string[]> = {
+      'dashicons.min.css': [
+        `${env.WP_SITE}/wp-includes/css/dashicons.min.css`,
+      ],
+      'astra.min.css': [
+        `${env.WP_SITE}/wp-content/themes/astra/assets/css/minified/style.min.css`,
+        `${env.WP_SITE}/wp-content/themes/astra/style.css`,
+      ],
+      'uagb-style.css': [
+        `${env.WP_SITE}/wp-content/plugins/ultimate-addons-for-gutenberg/assets/css/uagb-style.css`,
+        `${env.WP_SITE}/wp-content/plugins/ultimate-addons-for-gutenberg/assets/css/uagb-style.min.css`,
+        `${env.WP_SITE}/wp-content/plugins/ultimate-addons-for-gutenberg/dist/blocks.style.build.css`,
+      ],
+    }
+
+    const file = req.params.file as string
+    const candidates = styleMap[file]
+
+    if (!candidates) {
+      res.status(404).json({ status: false, message: 'Style not found' })
+      return
+    }
+
+    for (const url of candidates) {
+      const response = await WpService.fetchStyle(url)
+      if (response.status && response.res.status === 200) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8')
+        res.setHeader('Cache-Control', 'public, max-age=86400')
+        res.send(response.res.data)
+        return
+      }
+      console.log('[retrieveStyle] failed:', url)
+    }
+
+    res.status(404).json({ status: false, message: 'Style not found at any candidate path' })
+  }
+
+  static async retrieveRenderedPage(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const path = req.query.path as string | undefined
+
+    if (!path) {
+      res.status(400).json({ status: false, message: 'Missing path parameter' })
+      return
+    }
+
+    const response = await WpService.fetchRenderedPage(path)
 
     if (!response.status) {
       res.status(200).json({ status: false, statusCode: 200, message: response.message, data: null })
       return
     }
 
-    if (response.res.status === 200 && response.res.data?.length > 0) {
-      const mediaItem = response.res.data[0]
-      res.status(200).json({
-        status: true,
-        statusCode: 200,
-        message: 'Media retrieved successfully.',
-        data: {
-          source_url: mediaItem.source_url,
-          media_type: mediaItem.media_type,
-          mime_type: mediaItem.mime_type,
-        }
-      })
+    if (response.res.status === 200) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.setHeader('Cache-Control', 'public, max-age=300')
+      res.send(response.res.data)
     } else {
-      res.status(200).json({ status: false, statusCode: 404, message: 'Media not found', data: null })
+      res.status(200).json({ status: false, statusCode: response.res.status, message: 'Failed', data: null })
     }
   }
 
+  static async retrievePostsByCategory(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const slug = req.query.slug as string | undefined
+
+    if (!slug) {
+      res.status(400).json({ status: false, message: 'Missing slug parameter' })
+      return
+    }
+
+    const response = await WpService.fetchPostsByCategory(slug)
+
+    if (!response?.status) {
+      res.status(200).json({ status: false, statusCode: 200, message: response?.message, data: null })
+      return
+    }
+
+    if (response.res.status === 200) {
+      res.status(200).json({
+        status: true,
+        statusCode: 200,
+        message: 'Posts retrieved successfully.',
+        data: response.res.data,
+      })
+    } else {
+      res.status(200).json({ status: false, statusCode: response.res.status, message: 'Failed', data: null })
+    }
+  }
 
 }
