@@ -85,12 +85,24 @@ export function sanitizeWpContent(html: string): string {
 export function makePhoneNumbersClickable(html: string): string {
   if (!html) return html
 
-  // Match Greek phone number formats:
-  // 210-3482333, 2103482333, 210 3482333
-  // 231-0388727, 6944123456 (mobile)
-  // Also handles formats like 210-3410900
-  return html.replace(
+  // First pass: your existing regex
+  html = html.replace(
     /(?<!["\->])(\b(?:(?:\d{3}[-\s]?\d{7})|(?:\d{10})|(?:\d{4}[-\s]?\d{6}))\b)(?![^<]*>|[^<>]*<\/a>)/g,
     '<a href="tel:$1" style="color:#1976d2;text-decoration:none;font-weight:500;">$1</a>'
   )
+
+  // Second pass: numbers inside heading tags (<h1>...<strong>210 3410900</strong></h1>)
+  html = html.replace(
+    /<strong>(\d{3})\s+(\d{7})<\/strong>/g,
+    '<strong><a href="tel:$1$2" style="color:inherit;text-decoration:none;">$1 $2</a></strong>'
+  )
+
+  return html
+}
+
+export function decodeHtmlEntities(html: string): string {
+  if (!html) return html
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = html
+  return textarea.value
 }

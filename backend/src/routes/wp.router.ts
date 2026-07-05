@@ -4,6 +4,7 @@ import WpController from "@/controllers/wp.controller";
 const wpRouter = Router();
 
 wpRouter.get("/carousel",       WpController.retrieveCarousel);
+wpRouter.get('/clean-page', WpController.retrieveCleanPage);
 wpRouter.get("/get-contents",   WpController.retrieveContentTest);
 wpRouter.get("/media",          WpController.retrieveMedia)
 wpRouter.get("/navigation",     WpController.retrieveNavigation);

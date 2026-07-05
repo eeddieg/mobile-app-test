@@ -12,55 +12,232 @@
     </div>
 
     <div v-else-if="page" class="inner-wrapper">
-      <div class="page-title q-mb-sm">{{ page.title.rendered }}</div>
+
+      <div
+        class="page-title q-mb-sm"
+        v-html="makePhoneNumbersClickable(page.title.rendered)"
+      />
+
+      <!-- Static content card -->
       <div ref="contentRef">
-        <q-card flat bordered class="content-card">
+        <q-card flat bordered class="content-card q-mb-md">
           <q-card-section>
-            <div class="post-content" v-html="fixedContent" />
+            <div
+              class="post-content"
+              v-html="staticContent"
+              @click.capture="interceptLinks"
+            />
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn flat color="primary" icon="open_in_new" label="Άνοιγμα στο site" :href="page.link" target="_blank" />
+            <q-btn
+              flat
+              color="primary"
+              icon="open_in_new"
+              label="Άνοιγμα στο site"
+              :href="page.link"
+            />
           </q-card-actions>
         </q-card>
       </div>
-    </div>
 
+      <!-- Related posts section -->
+      <template v-if="relatedPosts.length">
+        <div class="text-subtitle1 text-weight-bold q-mb-sm q-mt-md q-pl-xs">
+          {{ relatedSectionTitle }}
+        </div>
+
+        <q-card
+          v-for="post in relatedPosts"
+          :key="post.id"
+          flat bordered
+          class="q-mb-md article-card"
+          :style="getPostImage(post) ? {
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.80)), url('${getPostImage(post)}')`
+          } : {}"
+        >
+          <q-card-section>
+            <div
+              class="text-subtitle1 text-weight-bold"
+              :class="getPostImage(post) ? 'text-white' : ''"
+            >
+              {{ decodeHtmlEntities(post.title.rendered) }}
+            </div>
+            <div
+              class="text-caption q-mt-xs"
+              :class="getPostImage(post) ? 'text-grey-3' : 'text-grey-6'"
+            >
+              {{ new Date(post.date).toLocaleDateString('el-GR') }}
+            </div>
+          </q-card-section>
+
+          <q-card-section>
+            <div
+              v-if="!isExpanded(post.id)"
+              class="post-content"
+              :class="getPostImage(post) ? 'text-white' : ''"
+              v-html="cleanExcerpt(post.excerpt.rendered)"
+            />
+            <q-slide-transition>
+              <div
+                v-if="isExpanded(post.id)"
+                class="post-content"
+                :class="getPostImage(post) ? 'text-white' : ''"
+                v-html="fixWpImageUrls(post.content.rendered)"
+              />
+            </q-slide-transition>
+          </q-card-section>
+
+          <q-card-actions align="right">
+            <q-btn
+              flat
+              :color="getPostImage(post) ? 'white' : 'primary'"
+              :label="isExpanded(post.id) ? 'Λιγότερα' : 'Διαβάστε περισσότερα'"
+              @click="togglePost(post.id)"
+            />
+            <q-btn
+              flat
+              :color="getPostImage(post) ? 'white' : 'primary'"
+              icon="open_in_new"
+              label="Άνοιγμα στο site"
+              :href="post.link"
+            />
+          </q-card-actions>
+        </q-card>
+      </template>
+
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
-import { fixWpImageUrls, fixBrokenImagesAsync, makePhoneNumbersClickable  } from 'src/utils/wpContent'
-import type { WpPage } from 'src/models/models'
+import { ref, computed, watch, nextTick } from 'vue'
+import {
+  fixWpImageUrls,
+  makePhoneNumbersClickable,
+  fixBrokenImagesAsync,
+  decodeHtmlEntities,
+} from 'src/utils/wpContent'
+import { postListStore } from 'src/stores/postlist.store'
+import type { WpPage, WPPostExtended } from 'src/models/models'
 
 defineOptions({ name: 'WpDefaultPage' })
 
 const props = defineProps<{
-  page:    WpPage | null
-  loading: boolean
-  error:   boolean
+  page:             WpPage | null
+  loading:          boolean
+  error:            boolean
+  relatedCategory?: string       // e.g. 'αιμοδοσία'
+  relatedTitle?:    string       // e.g. 'Αιμοδοσίες'
 }>()
 
 defineEmits<{ reload: [] }>()
 
+const store      = postListStore()
 const contentRef = ref<HTMLElement | null>(null)
 
-const fixedContent = computed(() => {
-  if (!props.page) return ''
-  const html = fixWpImageUrls(props.page.content.rendered)
-  return makePhoneNumbersClickable(html)
-})
+const relatedPosts        = ref<WPPostExtended[]>([])
+const expandedPosts       = ref<number[]>([])
+const relatedSectionTitle = computed(() => props.relatedTitle ?? 'Σχετικά Άρθρα')
 
-async function runImageFix(): Promise<void> {
-  await nextTick()
-  await new Promise(r => setTimeout(r, 100))
-  const postContent = contentRef.value?.querySelector<HTMLElement>('.post-content')
-  if (postContent) await fixBrokenImagesAsync(postContent)
+// Fetch related posts when category prop is provided
+watch(() => props.relatedCategory, async (cat) => {
+  if (!cat) return
+  const result = await store.fetchPostsByCategory(cat, 1)
+  if (result) relatedPosts.value = result.posts
+}, { immediate: true })
+
+function isExpanded(id: number): boolean {
+  return expandedPosts.value.includes(id)
 }
 
-// Run image fix whenever page content changes
+function togglePost(id: number): void {
+  if (isExpanded(id)) {
+    expandedPosts.value = expandedPosts.value.filter(x => x !== id)
+  } else {
+    expandedPosts.value.push(id)
+  }
+}
+
+function getPostImage(post: WPPostExtended): string {
+  return (
+    post.uagb_featured_image_src?.large?.[0] ||
+    post.uagb_featured_image_src?.medium_large?.[0] ||
+    post.uagb_featured_image_src?.full?.[0] ||
+    ''
+  )
+}
+
+function cleanExcerpt(html: string): string {
+  if (!html) return ''
+  const parser = new DOMParser()
+  const doc    = parser.parseFromString(html, 'text/html')
+  doc.querySelectorAll('p').forEach(p => {
+    const text  = p.textContent?.trim() ?? ''
+    const links = p.querySelectorAll('a')
+    if (links.length > 0 && [...links].map(a => a.textContent).join('').trim() === text) {
+      p.remove()
+    }
+  })
+  doc.querySelectorAll('a').forEach(a => a.remove())
+  return doc.body.innerHTML.trim()
+}
+
+// Strip embedded post loop from static content
+// Keep only content before the first article-style h3>a block
+const staticContent = computed(() => {
+  if (!props.page) return ''
+
+  const parser = new DOMParser()
+  const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
+  const keep: string[] = []
+  const children = Array.from(doc.body.children)
+
+  for (let i = 0; i < children.length; i++) {
+    const el  = children[i]
+    if (!el) continue
+    const tag = el.tagName.toLowerCase()
+
+    // Stop at article list section (h3 with anchor = post title)
+    if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
+
+    // Skip the section title heading that matches relatedTitle (e.g. "Αιμοδοσίες")
+    if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
+      const text = el.textContent?.trim() ?? ''
+      if (text === props.relatedTitle) continue
+    }
+
+    // Skip anchor tags that are "Περισσότερα" links
+    if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
+
+    // Skip image+link blocks that belong to related posts (anchors wrapping imgs before article h3s)
+    if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
+
+    keep.push(el.outerHTML)
+  }
+
+  let html = keep.join('')
+  html = fixWpImageUrls(html)
+  html = makePhoneNumbersClickable(html)
+  return html
+})
+
+function interceptLinks(e: MouseEvent): void {
+  const anchor = (e.target as HTMLElement).closest('a')
+  if (!anchor) return
+  const href = anchor.getAttribute('href') ?? ''
+  if (href.startsWith('tel:') || href.startsWith('mailto:')) return
+  if (anchor.getAttribute('target') === '_blank') return
+  e.preventDefault()
+  e.stopPropagation()
+}
+
 watch(() => props.page, async (newPage) => {
-  if (newPage) await runImageFix()
+  if (newPage) {
+    await nextTick()
+    await new Promise(r => setTimeout(r, 100))
+    const postContent = contentRef.value?.querySelector<HTMLElement>('.post-content')
+    if (postContent) await fixBrokenImagesAsync(postContent)
+  }
 }, { immediate: true })
 </script>
 
@@ -74,12 +251,6 @@ watch(() => props.page, async (newPage) => {
   flex-direction: column;
   align-items: center;
 }
-.inner-wrapper {
-  width: 100%;
-  max-width: 900px;
-  padding: 0 4px;
-  box-sizing: border-box;
-}
 .page-title {
   font-size: clamp(1rem, 4vw, 1.8rem);
   font-weight: 600;
@@ -89,24 +260,25 @@ watch(() => props.page, async (newPage) => {
   padding: 0 8px;
   margin-bottom: 8px;
 }
-.content-wrapper { width: 100%; }
-.content-card    { border-radius: 18px; }
-.content-card :deep(.q-card__section) { padding: 12px; }
-
-/* iframe — full width, auto height */
-.wp-iframe {
+.inner-wrapper {
   width: 100%;
-  min-height: 600px;
-  border: none;
-  border-radius: 8px;
-  display: block;
+  max-width: 900px;
+  padding: 0 4px;
+  box-sizing: border-box;
 }
-
-/* WP content */
+.content-card  { border-radius: 18px; }
+.content-card :deep(.q-card__section) { padding: 12px; }
+.article-card {
+  border-radius: 18px;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  min-height: 120px;
+}
 .post-content { width: 100%; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; word-break: break-word; }
-.post-content :deep(h1) { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 700; margin: 8px 0 4px; line-height: 1.2; }
-.post-content :deep(h2) { font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 600; margin: 6px 0 4px; line-height: 1.2; }
-.post-content :deep(h3), .post-content :deep(h4), .post-content :deep(h5) { font-size: clamp(0.9rem, 3vw, 1.1rem); font-weight: 600; margin: 6px 0 4px; line-height: 1.2; }
+.post-content :deep(h1) { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 700; margin: 8px 0 4px; }
+.post-content :deep(h2) { font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 600; margin: 6px 0 4px; }
+.post-content :deep(h3), .post-content :deep(h4), .post-content :deep(h5) { font-size: clamp(0.9rem, 3vw, 1.1rem); font-weight: 600; margin: 6px 0 4px; }
 .post-content :deep(p)  { margin-bottom: 10px; }
 .post-content :deep(a)  { color: #1976d2; word-break: break-word; }
 .post-content :deep(ul), .post-content :deep(ol) { padding-left: 20px; margin-bottom: 10px; }
@@ -114,19 +286,16 @@ watch(() => props.page, async (newPage) => {
 .post-content :deep(strong) { font-weight: 600; }
 .post-content :deep(img) { max-width: 100% !important; height: auto !important; display: block; margin: 12px auto; border-radius: 8px; }
 .post-content :deep(figure) { max-width: 100%; margin: 12px auto; text-align: center; }
-.post-content :deep(figcaption) { font-size: 12px; color: #888; margin-top: 4px; }
-.post-content :deep(table) { width: 100%; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; border-collapse: collapse; margin-bottom: 12px; }
+.post-content :deep(table) { width: 100%; display: block; overflow-x: auto; border-collapse: collapse; margin-bottom: 12px; }
 .post-content :deep(td), .post-content :deep(th) { padding: 6px 10px; border: 1px solid #ddd; font-size: 13px; vertical-align: top; }
 .post-content :deep(thead) { background: #f5f5f5; font-weight: 600; }
 .post-content :deep(tr:nth-child(even)) { background: #fafafa; }
 .post-content :deep(iframe), .post-content :deep(video) { max-width: 100%; width: 100%; border: none; border-radius: 8px; }
-
 @media (max-width: 600px) {
   .page-container { padding: 8px; }
   .inner-wrapper  { padding: 0 4px; }
   .content-card :deep(.q-card__section) { padding: 8px; }
   .post-content   { font-size: 13px; }
-  .post-content :deep(td), .post-content :deep(th) { padding: 4px 6px; font-size: 12px; }
 }
 * { box-sizing: border-box; }
 </style>

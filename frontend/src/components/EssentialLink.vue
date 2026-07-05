@@ -121,10 +121,10 @@ const navSections = [
     caption: 'Νέα & Ανακοινώσεις',
     icon: 'newspaper',
     children: [
-      { title: 'ΝΕΑ-ΑΝΑΚΟΙΝΩΣΕΙΣ', icon: 'campaign',    path: '/page/nea-anakoinoseis' },      { title: 'ΕΠΙΣΤΗΜΟΝΙΚΑ ΑΡΘΡΑ', icon: 'science',   path: '/page/arthra' },
-      { title: 'ΣΥΝΕΔΡΙΑ',         icon: 'groups',      path: '/page/synedria' },
-      { title: 'ΑΙΜΟΔΟΣΙΑ',        icon: 'bloodtype',   path: '/page/aimodosia' },
-      { title: 'ΒΙΝΤΕΟ',           icon: 'play_circle', path: '/page/vinteo' },
+      { title: 'ΝΕΑ-ΑΝΑΚΟΙΝΩΣΕΙΣ',    icon: 'campaign',    path: '/news' },
+      { title: 'ΕΠΙΣΤΗΜΟΝΙΚΑ ΑΡΘΡΑ',  icon: 'science',     path: '/arthra' },
+      { title: 'ΣΥΝΕΔΡΙΑ',            icon: 'groups',      path: '/page/synedria' },
+      { title: 'ΒΙΝΤΕΟ',              icon: 'play_circle', path: '/videos' },
     ],
   },
   {

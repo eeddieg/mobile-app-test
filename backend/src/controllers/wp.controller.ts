@@ -383,19 +383,151 @@ export default class WpController {
     }
   }
 
+  static async retrieveCleanPage(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const url = req.query.url as string | undefined
+
+    if (!url) {
+      res.status(400).json({ status: false, message: 'Missing url parameter' })
+      return
+    }
+
+    const response = await WpService.fetchCleanPage(url)
+
+    if (!response.status) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      res.status(200).send(WpController.notFoundPage(url))
+      return
+    }
+
+    const rawHtml = response.res.data as string
+
+    // Extract <title> for the frontend to use
+    const titleMatch = rawHtml.match(/<title[^>]*>([^<]+)<\/title>/i)
+    const pageTitle  = titleMatch?.[1]
+      ?.replace(/\s*[-|]\s*.*$/, '')  // strip " - Site Name" suffix
+      ?.trim() ?? ''
+
+    // Send title as custom header so frontend can read it
+    res.setHeader('X-Page-Title', encodeURIComponent(pageTitle))
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, max-age=300')
+    res.send(WpController.extractMainContent(rawHtml))
+  }
+
+  static notFoundPage(url: string): string {
+    return `<!DOCTYPE html>
+            <html lang="el">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 100vh;
+                  background: #f5f5f5;
+                  padding: 24px;
+                  text-align: center;
+                  color: #333;
+                }
+                .icon { font-size: 64px; margin-bottom: 16px; }
+                h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1976d2; }
+                p  { font-size: 14px; line-height: 1.6; color: #666; margin-bottom: 16px; }
+                a  { color: #1976d2; font-size: 13px; word-break: break-all; }
+              </style>
+            </head>
+            <body>
+              <div class="icon">🔍</div>
+              <h2>Η σελίδα δεν βρέθηκε</h2>
+              <p>Ο σύνδεσμος που ακολουθήσατε δεν είναι πλέον διαθέσιμος ή έχει μετακινηθεί.</p>
+              <a href="${url}" target="_blank">↗ Άνοιγμα στο browser</a>
+            </body>
+            </html>`
+  }
+
+  static extractMainContent(html: string): string {
+    // Try <main>...</main>
+    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)
+    if (mainMatch?.[1]) {
+      return WpController.wrapContent(mainMatch[1])
+    }
+
+    // Try <article>...</article>
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
+    if (articleMatch?.[1]) {
+      return WpController.wrapContent(articleMatch[1])
+    }
+
+    // Try div with class entry-content or post-content
+    const entryMatch = html.match(/<div[^>]*class="[^"]*(?:entry-content|post-content)[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
+    if (entryMatch?.[1]) {
+      return WpController.wrapContent(entryMatch[1])
+    }
+
+    // Fallback — return stripped version
+    return WpController.wrapContent(html
+      .replace(/<header[\s\S]*?<\/header>/gi, '')
+      .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+      .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+    )
+  }
+
+  static wrapContent(content: string): string {
+    return `<!DOCTYPE html>
+            <html lang="el">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                * { box-sizing: border-box; }
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  font-size: 15px;
+                  line-height: 1.6;
+                  color: #333;
+                  padding: 16px;
+                  margin: 0;
+                  background: #fff;
+                }
+                img { max-width: 100% !important; height: auto !important; }
+                a { color: #1976d2; }
+                h1, h2, h3 { line-height: 1.3; }
+                input, form, .search-form, .search-field { display: none !important; }
+              </style>
+            </head>
+            <body>
+              ${content}
+            </body>
+            </html>`
+  }
+
   static async retrievePostsByCategory(
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> {
     const slug = req.query.slug as string | undefined
+    const page = parseInt(req.query.page as string ?? '1', 10)
+
+    console.log('[retrievePostsByCategory] slug:', slug, 'page:', page)
+
 
     if (!slug) {
       res.status(400).json({ status: false, message: 'Missing slug parameter' })
       return
     }
 
-    const response = await WpService.fetchPostsByCategory(slug)
+    const response = await WpService.fetchPostsByCategory(slug, page)
 
     if (!response?.status) {
       res.status(200).json({ status: false, statusCode: 200, message: response?.message, data: null })
@@ -404,10 +536,12 @@ export default class WpController {
 
     if (response.res.status === 200) {
       res.status(200).json({
-        status: true,
+        status:     true,
         statusCode: 200,
-        message: 'Posts retrieved successfully.',
-        data: response.res.data,
+        message:    'Posts retrieved successfully.',
+        data:       response.res.data,
+        totalPages: response.totalPages,
+        total:      response.total,
       })
     } else {
       res.status(200).json({ status: false, statusCode: response.res.status, message: 'Failed', data: null })

@@ -46,5 +46,21 @@ export const wpPageStore = defineStore('wpPageStore', {
         return null
       }
     },
+    async fetchCleanPage(url: string): Promise<{ html: string; title: string } | null> {
+      try {
+        const res = await Axios.get(`/wp/clean-page?url=${encodeURIComponent(url)}`, {
+          responseType: 'text',
+        })
+        const title = decodeURIComponent(res.headers['x-page-title'] ?? '')
+        return {
+          html:  res.data as string,
+          title: title || 'Ιστοσελίδα',
+        }
+      } catch (e) {
+        console.error('fetchCleanPage failed:', e)
+        return null
+      }
+    }
+
   },
 })

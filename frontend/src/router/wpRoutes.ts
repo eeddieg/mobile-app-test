@@ -35,6 +35,46 @@ const wpRoutes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/news',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'news',
+        component: () => import('pages/PostsPage.vue'),
+        props: {
+          title:        'ΝΕΑ-ΑΝΑΚΟΙΝΩΣΕΙΣ',
+          categorySlug: 'νέα-ανακοινώσεις',        }
+      }
+    ]
+  },
+  {
+    path: '/arthra',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'arthra',
+        component: () => import('pages/PostsPage.vue'),
+        props: () => ({
+          title:        'ΕΠΙΣΤΗΜΟΝΙΚΑ ΑΡΘΡΑ',
+          categorySlug: 'επιστημονικά-άρθρα',
+        })
+      }
+    ]
+  },
+  {
+    path: '/videos',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'videos',
+        component: () => import('pages/VideosPage.vue'),
+      }
+    ]
+  },
+  {
     path: '/contact',
     component: () => import('layouts/MainLayout.vue'),
     children: [

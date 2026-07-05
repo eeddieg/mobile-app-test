@@ -1,14 +1,15 @@
 <template>
-  <q-page class="row items-center justify-evenly">
-    <post-list-component
-      :title="title"
-    ></post-list-component>
-  </q-page>
+  <PostListComponent :title="title" :category-slug="categorySlug" />
 </template>
 
 <script setup lang="ts">
-import PostListComponent from 'components/PostListComponent.vue';
+import PostListComponent from "../components/PostListComponent.vue";
 
-const title = "Αρχική Σελίδα";
+const props = defineProps<{
+  title?:        string
+  categorySlug?: string
+}>()
 
+const title        = props.title        ?? 'ΑΡΧΙΚΗ'
+const categorySlug = props.categorySlug ?? ''
 </script>

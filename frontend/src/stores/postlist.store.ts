@@ -1,68 +1,64 @@
-import { defineStore } from "pinia"
-import Axios from "src/services/api.backend";
-import type { MediaItem, WPPost } from "../models/models";
+import { defineStore } from 'pinia'
+import Axios from 'src/services/api.backend'
+import type { MediaItem, WPPost, WPPostExtended } from '../models/models'
 
-export const postListStore = defineStore("postListStore", {
+export const postListStore = defineStore('postListStore', {
   persist: true,
-
   state: () => ({
-    carouselUrl: "",
-    postListUrl: "",
+    carouselUrl:  '',
+    postListUrl:  '',
     carouselData: [] as MediaItem[],
-    postData: [] as WPPost[],
+    postData:     [] as WPPost[],
   }),
-
   actions: {
-    setCarouselUrl(url: string) {
-      this.carouselUrl = url;
-    },
-    setPostListUrl(url: string) {
-      this.postListUrl = url;
-    },
-    setCarouselData(data:MediaItem[]) {
-      this.carouselData = data;
-    },
-    setPostData(data:WPPost[]) {
-      this.postData = data;
-    },
-    async fetchCarousel() {
-      const url = Axios.defaults.baseURL + "/wp" + "/carousel";
-      this.setCarouselUrl(url);
+    setCarouselUrl(url: string)      { this.carouselUrl  = url },
+    setPostListUrl(url: string)      { this.postListUrl  = url },
+    setCarouselData(data: MediaItem[]){ this.carouselData = data },
+    setPostData(data: WPPost[])      { this.postData     = data },
 
+    async fetchCarousel(): Promise<MediaItem[] | null> {
+      const url = Axios.defaults.baseURL + '/wp/carousel'
+      this.setCarouselUrl(url)
       try {
         const res = await Axios.get(url)
-
-        if (res.data.statuscode == 200 && res.data.data.length > 0) {
-          this.setCarouselData(res.data.data as MediaItem[]);
+        if (res.data.statusCode === 200 && res.data.data?.length > 0) {
+          this.setCarouselData(res.data.data as MediaItem[])
         }
-
-        return res.data.data;
+        return res.data.data ?? null
       } catch (error) {
-        console.error('PostListStore: fetchCarousel failed:', error);
-        return null;
+        console.error('PostListStore: fetchCarousel failed:', error)
+        return null
       }
     },
-    async fetchPosts() {
-      const url = Axios.defaults.baseURL + "/wp" + "/posts";
-      this.setPostListUrl(url);
 
+    async fetchPosts(): Promise<WPPostExtended[] | null> {
+      const url = Axios.defaults.baseURL + '/wp/posts'
+      this.setPostListUrl(url)
       try {
         const res = await Axios.get(url)
-
-        if (res.data.statuscode == 200 && res.data.data.length > 0) {
-          this.setPostData(res.data.data as WPPost[]);
+        if (res.data.statusCode === 200 && res.data.data?.length > 0) {
+          this.setPostData(res.data.data as WPPost[])
         }
-        return res.data.data;
+        return res.data.data ?? null
       } catch (error) {
-        console.error('PostListStore: fetchPosts failed:', error);
-        return null;
+        console.error('PostListStore: fetchPosts failed:', error)
+        return null
       }
     },
-    async fetchPostsByCategory(slug: string): Promise<unknown[] | null> {
+
+    async fetchPostsByCategory(
+      slug: string,
+      page = 1
+    ): Promise<{ posts: WPPostExtended[]; totalPages: number } | null> {
       try {
-        const res = await Axios.get(`/wp/posts/category?slug=${encodeURIComponent(slug)}`)
+        const res = await Axios.get(
+          `/wp/posts/category?slug=${encodeURIComponent(slug)}&page=${page}`
+        )
         if (res.data.statusCode === 200 && res.data.data) {
-          return res.data.data as unknown[]
+          return {
+            posts:      res.data.data as WPPostExtended[],
+            totalPages: res.data.totalPages ?? 1,
+          }
         }
         return null
       } catch (e) {
@@ -72,5 +68,4 @@ export const postListStore = defineStore("postListStore", {
     }
   },
   getters: {},
-
 })
