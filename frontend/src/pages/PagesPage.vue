@@ -9,6 +9,6 @@
 <script setup lang="ts">
 import PagesComponent from 'components/PagesComponent.vue';
 
-const title = "PAGESSSSSS";
+const title = "PAGES";
 
 </script>

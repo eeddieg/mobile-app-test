@@ -111,14 +111,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
+import { postListStore } from "../stores/postlist.store"
+import type { WpPage, WPPostExtended } from "../models/models"
 import {
+  decodeHtmlEntities,
   fixWpImageUrls,
   makePhoneNumbersClickable,
   fixBrokenImagesAsync,
-  decodeHtmlEntities,
-} from 'src/utils/wpContent'
-import { postListStore } from 'src/stores/postlist.store'
-import type { WpPage, WPPostExtended } from 'src/models/models'
+  sanitizeWpContent
+} from "../utils/wpContent"
 
 defineOptions({ name: 'WpDefaultPage' })
 
@@ -139,11 +140,83 @@ const relatedPosts        = ref<WPPostExtended[]>([])
 const expandedPosts       = ref<number[]>([])
 const relatedSectionTitle = computed(() => props.relatedTitle ?? 'Σχετικά Άρθρα')
 
+// Strip embedded post loop from static content
+// Keep only content before the first article-style h3>a block
+// const staticContent = computed(() => {
+//   if (!props.page) return ''
+
+//   const parser = new DOMParser()
+//   const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
+//   const keep: string[] = []
+//   const children = Array.from(doc.body.children)
+
+//   for (let i = 0; i < children.length; i++) {
+//     const el  = children[i]
+//     if (!el) continue
+//     const tag = el.tagName.toLowerCase()
+
+//     // Stop at article list section (h3 with anchor = post title)
+//     if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
+
+//     // Skip the section title heading that matches relatedTitle (e.g. "Αιμοδοσίες")
+//     if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
+//       const text = el.textContent?.trim() ?? ''
+//       if (text === props.relatedTitle) continue
+//     }
+
+//     // Skip anchor tags that are "Περισσότερα" links
+//     if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
+
+//     // Skip image+link blocks that belong to related posts (anchors wrapping imgs before article h3s)
+//     if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
+
+//     keep.push(el.outerHTML)
+//   }
+
+//   let html = keep.join('')
+//   html = fixWpImageUrls(html)
+//   html = makePhoneNumbersClickable(html)
+//   return html
+// })
+const staticContent = computed(() => {
+  if (!props.page) return ''
+  const parser = new DOMParser()
+  const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
+  const keep: string[] = []
+
+  for (const el of Array.from(doc.body.children)) {
+    const tag = el.tagName.toLowerCase()
+    if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
+    if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
+      if (el.textContent?.trim() === props.relatedTitle) continue
+    }
+    if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
+    if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
+    keep.push(el.outerHTML)
+  }
+
+  let html = keep.join('')
+  html = sanitizeWpContent(html)       // ← fix UAGB blocks
+  html = fixWpImageUrls(html)
+  html = makePhoneNumbersClickable(html)
+  return html
+})
+
 // Fetch related posts when category prop is provided
 watch(() => props.relatedCategory, async (cat) => {
   if (!cat) return
   const result = await store.fetchPostsByCategory(cat, 1)
   if (result) relatedPosts.value = result.posts
+}, { immediate: true })
+
+
+watch(() => props.page, async (newPage) => {
+  if (newPage) {
+    await nextTick()
+    await new Promise(r => setTimeout(r, 100))
+    const postContent = contentRef.value?.querySelector<HTMLElement>('.post-content')
+    if (postContent) await fixBrokenImagesAsync(postContent)
+  }
 }, { immediate: true })
 
 function isExpanded(id: number): boolean {
@@ -182,45 +255,6 @@ function cleanExcerpt(html: string): string {
   return doc.body.innerHTML.trim()
 }
 
-// Strip embedded post loop from static content
-// Keep only content before the first article-style h3>a block
-const staticContent = computed(() => {
-  if (!props.page) return ''
-
-  const parser = new DOMParser()
-  const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
-  const keep: string[] = []
-  const children = Array.from(doc.body.children)
-
-  for (let i = 0; i < children.length; i++) {
-    const el  = children[i]
-    if (!el) continue
-    const tag = el.tagName.toLowerCase()
-
-    // Stop at article list section (h3 with anchor = post title)
-    if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
-
-    // Skip the section title heading that matches relatedTitle (e.g. "Αιμοδοσίες")
-    if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
-      const text = el.textContent?.trim() ?? ''
-      if (text === props.relatedTitle) continue
-    }
-
-    // Skip anchor tags that are "Περισσότερα" links
-    if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
-
-    // Skip image+link blocks that belong to related posts (anchors wrapping imgs before article h3s)
-    if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
-
-    keep.push(el.outerHTML)
-  }
-
-  let html = keep.join('')
-  html = fixWpImageUrls(html)
-  html = makePhoneNumbersClickable(html)
-  return html
-})
-
 function interceptLinks(e: MouseEvent): void {
   const anchor = (e.target as HTMLElement).closest('a')
   if (!anchor) return
@@ -231,14 +265,6 @@ function interceptLinks(e: MouseEvent): void {
   e.stopPropagation()
 }
 
-watch(() => props.page, async (newPage) => {
-  if (newPage) {
-    await nextTick()
-    await new Promise(r => setTimeout(r, 100))
-    const postContent = contentRef.value?.querySelector<HTMLElement>('.post-content')
-    if (postContent) await fixBrokenImagesAsync(postContent)
-  }
-}, { immediate: true })
 </script>
 
 <style scoped>

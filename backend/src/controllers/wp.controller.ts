@@ -448,7 +448,6 @@ export default class WpController {
               <div class="icon">🔍</div>
               <h2>Η σελίδα δεν βρέθηκε</h2>
               <p>Ο σύνδεσμος που ακολουθήσατε δεν είναι πλέον διαθέσιμος ή έχει μετακινηθεί.</p>
-              <a href="${url}" target="_blank">↗ Άνοιγμα στο browser</a>
             </body>
             </html>`
   }

@@ -58,15 +58,25 @@ const pageComponent = computed(() => {
 
 async function load(): Promise<void> {
   const localSlug = route.params.slug as string
+
+  console.log('[WpPage] loading slug:', localSlug)
+
   loading.value = true
   error.value   = false
   page.value    = null
 
   try {
     const pageId = SLUG_TO_PAGE_ID[localSlug]
+
+    console.log('[WpPage] pageId:', pageId)
+
+
     page.value = pageId
       ? await store.fetchById(pageId)
       : await store.fetchBySlug(SLUG_TO_WP_SLUG[localSlug] ?? localSlug)
+
+    console.log('[WpPage] page fetched:', page.value?.id, page.value?.title?.rendered)
+
   } catch {
     error.value = true
   } finally {

@@ -63,21 +63,65 @@ function isProblematicWpUrl(url: string): boolean {
  * and won't render correctly outside the WP theme.
  * Keeps only semantic HTML: headings, paragraphs, lists, tables, images.
  */
+// export function sanitizeWpContent(html: string): string {
+//   if (!html) return html
+
+//   const parser = new DOMParser()
+//   const doc = parser.parseFromString(html, 'text/html')
+
+//   doc.querySelectorAll('.uagb-icon-list-item, .uagb-icon-list').forEach(el => el.remove())
+
+//   doc.querySelectorAll('[class*="uagb-block"]').forEach(el => {
+//     if (!el.textContent?.trim()) el.remove()
+//   })
+
+//   doc.querySelectorAll('.uagb-separator, .wp-block-separator, hr.is-style-wide').forEach(el => el.remove())
+
+//   doc.querySelectorAll('div:empty, span:empty').forEach(el => el.remove())
+
+//   return doc.body.innerHTML
+// }
+
 export function sanitizeWpContent(html: string): string {
   if (!html) return html
 
   const parser = new DOMParser()
-  const doc = parser.parseFromString(html, 'text/html')
+  const doc    = parser.parseFromString(html, 'text/html')
 
-  doc.querySelectorAll('.uagb-icon-list-item, .uagb-icon-list').forEach(el => el.remove())
+  // Fix UAGB icon list items — add line breaks between compressed text
+  doc.querySelectorAll('.uagb-icon-list-item').forEach(el => {
+    el.insertAdjacentHTML('afterend', '<br>')
+  })
 
-  doc.querySelectorAll('[class*="uagb-block"]').forEach(el => {
+  // Fix UAGB icon list labels — wrap each in a block element
+  doc.querySelectorAll('.uagb-icon-list-label').forEach(el => {
+    const text = el.textContent?.trim() ?? ''
+    if (text) {
+      const p = doc.createElement('p')
+      p.textContent = '• ' + text
+      el.closest('.uagb-icon-list-item')?.replaceWith(p)
+    }
+  })
+
+  // Remove empty UAGB wrappers left behind
+  doc.querySelectorAll('.uagb-icon-list-content').forEach(el => {
     if (!el.textContent?.trim()) el.remove()
   })
 
-  doc.querySelectorAll('.uagb-separator, .wp-block-separator, hr.is-style-wide').forEach(el => el.remove())
-
-  doc.querySelectorAll('div:empty, span:empty').forEach(el => el.remove())
+  // Fix background-image inline styles with Greek filenames
+  doc.querySelectorAll<HTMLElement>('[style*="background"]').forEach(el => {
+    const style = el.getAttribute('style') ?? ''
+    if (!style.includes('wp-content/uploads')) return
+    const fixed = style.replace(/url\(['"]?([^'")\s]+)['"]?\)/g, (_m, url: string) => {
+      const filename    = url.split('/').pop() ?? ''
+      const encodedName = filename.split('').map(c =>
+        /[^\u0020-\u007E]/.test(c) ? encodeURIComponent(c) : c
+      ).join('')
+      const fixedUrl = url.substring(0, url.lastIndexOf('/') + 1) + encodedName
+      return `url('${fixedUrl}')`
+    })
+    el.setAttribute('style', fixed)
+  })
 
   return doc.body.innerHTML
 }
