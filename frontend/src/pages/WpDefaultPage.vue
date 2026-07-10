@@ -142,61 +142,67 @@ const relatedSectionTitle = computed(() => props.relatedTitle ?? 'Σχετικά
 
 // Strip embedded post loop from static content
 // Keep only content before the first article-style h3>a block
-// const staticContent = computed(() => {
-//   if (!props.page) return ''
+// WpDefaultPage.vue — replace the staticContent computed
 
-//   const parser = new DOMParser()
-//   const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
-//   const keep: string[] = []
-//   const children = Array.from(doc.body.children)
-
-//   for (let i = 0; i < children.length; i++) {
-//     const el  = children[i]
-//     if (!el) continue
-//     const tag = el.tagName.toLowerCase()
-
-//     // Stop at article list section (h3 with anchor = post title)
-//     if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
-
-//     // Skip the section title heading that matches relatedTitle (e.g. "Αιμοδοσίες")
-//     if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
-//       const text = el.textContent?.trim() ?? ''
-//       if (text === props.relatedTitle) continue
-//     }
-
-//     // Skip anchor tags that are "Περισσότερα" links
-//     if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
-
-//     // Skip image+link blocks that belong to related posts (anchors wrapping imgs before article h3s)
-//     if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
-
-//     keep.push(el.outerHTML)
-//   }
-
-//   let html = keep.join('')
-//   html = fixWpImageUrls(html)
-//   html = makePhoneNumbersClickable(html)
-//   return html
-// })
 const staticContent = computed(() => {
   if (!props.page) return ''
+
   const parser = new DOMParser()
   const doc    = parser.parseFromString(props.page.content.rendered, 'text/html')
-  const keep: string[] = []
 
-  for (const el of Array.from(doc.body.children)) {
+  const toRemove: ChildNode[] = []
+  let cutFrom: ChildNode | null = null
+
+  // Walk ELEMENT nodes only to decide what to cut/remove,
+  // but do NOT rebuild HTML from these — just mark nodes.
+  for (const node of Array.from(doc.body.childNodes)) {
+    if (node.nodeType !== Node.ELEMENT_NODE) continue
+    const el  = node as HTMLElement
     const tag = el.tagName.toLowerCase()
-    if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) break
-    if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
-      if (el.textContent?.trim() === props.relatedTitle) continue
+
+    // Stop at article list section (h3 with anchor = post title)
+    if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) {
+      cutFrom = node
+      break
     }
-    if (tag === 'a' && el.textContent?.includes('Περισσότερα')) continue
-    if (tag === 'a' && el.querySelector('img') && props.relatedCategory) continue
-    keep.push(el.outerHTML)
+
+    // Skip the section title heading that matches relatedTitle
+    if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
+      if (el.textContent?.trim() === props.relatedTitle) {
+        toRemove.push(node)
+        continue
+      }
+    }
+
+    // Skip "Περισσότερα" links
+    if (tag === 'a' && el.textContent?.includes('Περισσότερα')) {
+      toRemove.push(node)
+      continue
+    }
+
+    // Skip image+link blocks belonging to related posts
+    if (tag === 'a' && el.querySelector('img') && props.relatedCategory) {
+      toRemove.push(node)
+      continue
+    }
   }
 
-  let html = keep.join('')
-  html = sanitizeWpContent(html)       // ← fix UAGB blocks
+  // Remove everything from the cut point to the end of body
+  if (cutFrom) {
+    let node: ChildNode | null = cutFrom
+    while (node) {
+      const next: ChildNode | null = node.nextSibling
+      node.remove()
+      node = next
+    }
+  }
+
+  toRemove.forEach(n => n.remove())
+
+  // innerHTML walks ALL node types (text + elements), unlike
+  // rebuilding from .children[].outerHTML which drops loose text nodes
+  let html = doc.body.innerHTML
+  html = sanitizeWpContent(html)
   html = fixWpImageUrls(html)
   html = makePhoneNumbersClickable(html)
   return html

@@ -79,14 +79,14 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn
+          <!-- <q-btn
             flat
             color="primary"
             icon="open_in_new"
             label="Άνοιγμα στο site"
             :href="selectedPost?.link"
             target="_blank"
-          />
+          /> -->
           <q-btn flat label="Κλείσιμο" @click="closeVideo" />
         </q-card-actions>
 

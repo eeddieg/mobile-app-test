@@ -115,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { postListStore }  from 'src/stores/postlist.store'
 import { screenStore }    from 'src/stores/screen.store'
 import { fixWpImageUrls, decodeHtmlEntities } from 'src/utils/wpContent'
@@ -152,6 +152,13 @@ onMounted(async () => {
     retrievePosts(1),
     props.categorySlug ? Promise.resolve() : retrieveCarousel(),
   ])
+})
+
+watch(() => props.categorySlug, async (newSlug, oldSlug) => {
+  if (newSlug === oldSlug) return
+  currentPage.value   = 1
+  expandedPosts.value = []
+  await retrievePosts(1)
 })
 
 onUnmounted(() => window.removeEventListener('resize', resizeHandler))

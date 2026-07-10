@@ -4,7 +4,7 @@ import wpRoutes from './wpRoutes'
 const indexRoutes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: { name: 'posts' },   // just redirect, no duplicate definition
+    redirect: { name: 'posts' },
   },
   ...wpRoutes,
   {

@@ -33,7 +33,12 @@ const CUSTOM_RENDERERS: Record<string, ReturnType<typeof defineAsyncComponent>> 
   'apostoli':             defineAsyncComponent(() => import("../pages/WpIconListPage.vue")),
   'grammi-ypostiriksis':  defineAsyncComponent(() => import("../pages/WpDefaultPage.vue")),
   'faq':                  defineAsyncComponent(() => import('../pages/WpFaqPage.vue')),
-
+  'dioikisi':             defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'dioikisi-kia':         defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'dioikisi-kith':        defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'iatriko-prosopiko':    defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'nosileutiko':          defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'psixologoi':           defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
 }
 
 const RELATED_CATEGORIES: Record<string, { category: string; title: string }> = {

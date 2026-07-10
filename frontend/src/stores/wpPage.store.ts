@@ -5,29 +5,33 @@ import type { WpPage } from 'src/models/models'
 export const wpPageStore = defineStore('wpPageStore', {
   persist: true,
   state: () => ({
-    cache: {} as Record<string, WpPage>,
+    cache: {} as Record<string, { data: WpPage; ts: number }>,
   }),
   actions: {
     async fetchById(id: number): Promise<WpPage | null> {
       const key = `id_${id}`
-      if (this.cache[key]) return this.cache[key]
+      const CACHE_TTL = 5 * 60 * 1000 // 5 min
+      const cached = this.cache[key]
+      if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data
 
       try {
         const res = await Axios.get(`/wp/pages/${id}`)
         if (res.data.statusCode === 200 && res.data.data) {
-          this.cache[key] = res.data.data as WpPage
-          return this.cache[key]
+          this.cache[key] = { data: res.data.data as WpPage, ts: Date.now() }
+          return this.cache[key].data
         }
-        return null
+        return cached?.data ?? null // fall back to stale cache only on failure
       } catch (e) {
         console.error('wpPageStore.fetchById failed:', e)
-        return null
+        return cached?.data ?? null
       }
     },
 
     async fetchBySlug(wpSlug: string): Promise<WpPage | null> {
       const key = `slug_${wpSlug}`
-      if (this.cache[key]) return this.cache[key]
+      const CACHE_TTL = 5 * 60 * 1000 // 5 min
+      const cached = this.cache[key]
+      if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data
 
       try {
         const res = await Axios.get(`/wp/pages?slug=${encodeURIComponent(wpSlug)}`)
@@ -36,7 +40,7 @@ export const wpPageStore = defineStore('wpPageStore', {
             ? res.data.data[0]
             : res.data.data
           if (page) {
-            this.cache[key] = page
+            this.cache[key] = { data: page, ts: Date.now() }
             return page
           }
         }

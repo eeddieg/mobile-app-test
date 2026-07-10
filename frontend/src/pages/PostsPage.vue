@@ -3,6 +3,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import PostListComponent from "../components/PostListComponent.vue";
 
 const props = defineProps<{
@@ -10,6 +11,8 @@ const props = defineProps<{
   categorySlug?: string
 }>()
 
-const title        = props.title        ?? 'ΑΡΧΙΚΗ'
-const categorySlug = props.categorySlug ?? ''
+const title        = computed(() => props.title        ?? 'ΑΡΧΙΚΗ')
+const categorySlug = computed(() => props.categorySlug ?? '')
 </script>
+
+

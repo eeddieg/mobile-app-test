@@ -73,11 +73,11 @@ const navSections = [
     caption: 'Για τον ασθενή',
     icon: 'info',
     children: [
-      { title: 'Δικαιούχοι Περίθαλψης',   icon: 'verified_user',   path: '/page/dikaiouxoi' },
-      { title: 'Γραφείο Ασθενών',          icon: 'assignment_ind',  path: '/page/grafeio-asthenon' },
-      { title: 'Ιατρείο Επιφυλακής',       icon: 'emergency',       path: '/page/iatreio-epifylakas' },
-      { title: '24ωρη Γραμμή Υποστήριξης', icon: 'support_agent',   path: '/page/grammi-ypostiriksis' },
-      { title: 'Συχνές Ερωτήσεις',         icon: 'quiz',            path: '/page/faq' },
+      { title: 'Δικαιούχοι Περίθαλψης',       icon: 'verified_user',   path: '/page/dikaiouxoi' },
+      { title: 'Γραφείο Διαχείρισης Ασθενών', icon: 'assignment_ind',  path: '/page/grafeio-asthenon' },
+      { title: 'Ιατρείο Επιφυλακής',          icon: 'emergency',       path: '/page/iatreio-epifylakas' },
+      { title: '24ωρη Γραμμή Υποστήριξης',    icon: 'support_agent',   path: '/page/grammi-ypostiriksis' },
+      { title: 'Συχνές Ερωτήσεις',            icon: 'quiz',            path: '/page/faq' },
     ],
   },
   {

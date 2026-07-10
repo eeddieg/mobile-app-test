@@ -19,6 +19,7 @@ try {
 
   wpApi = axios.create({
     baseURL: env.WP_BASE,
+    timeout: 8000,
     // headers: {
     //   Authorization: authHeader,
     // },
@@ -26,6 +27,7 @@ try {
   
   wpApiContents = axios.create({
     baseURL: env.WP_CONTENTS,
+    timeout: 8000,
     // headers: {
       //   Authorization: authHeader,
       // },
@@ -33,6 +35,7 @@ try {
     
     wpApiStyles = axios.create({
       baseURL: env.WP_SITE,
+      timeout: 8000,
       // headers: {
       //   Authorization: authHeader,
       // },

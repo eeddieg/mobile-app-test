@@ -111,40 +111,6 @@ export default class WpController {
     }
   };
 
-  // static async retrievePages(
-  //   req: Request,
-  //   res: Response,
-  //   next: NextFunction
-  // ): Promise<void> {
-  //   const endpoint = "pages";
-  //   const response = await WpService.fetchPosts(endpoint);
-
-  //   if (response == undefined) {
-  //     res.status(200).json({
-  //       status: false,
-  //       statusCode: 200,
-  //       message: "WP server: Cannot reach the server.",
-  //       data: null,
-  //     }); 
-  //   } else {
-  //     if (response.status && response.res.status === 200) {
-  //       res.status(200).json({
-  //         status: response.status,
-  //         statusCode: 200,
-  //         message: "Pages retrieved successfully.",
-  //         data: response.res.data
-  //       }); 
-  //     } else {
-  //       res.status(200).json({
-  //         status: response.status,
-  //         statusCode: response.res.status,
-  //         message: response.message,
-  //         data: response.res.data
-  //       }); 
-  //     }
-  //   }
-  // };
-
   static async retrievePages(
     req: Request,
     res: Response,
@@ -453,32 +419,28 @@ export default class WpController {
   }
 
   static extractMainContent(html: string): string {
-    // Try <main>...</main>
     const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)
     if (mainMatch?.[1]) {
-      return WpController.wrapContent(mainMatch[1])
+      return WpController.wrapContent(WpController.cleanExtractedContent(mainMatch[1]))
     }
 
-    // Try <article>...</article>
     const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)
     if (articleMatch?.[1]) {
-      return WpController.wrapContent(articleMatch[1])
+      return WpController.wrapContent(WpController.cleanExtractedContent(articleMatch[1]))
     }
 
-    // Try div with class entry-content or post-content
     const entryMatch = html.match(/<div[^>]*class="[^"]*(?:entry-content|post-content)[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
     if (entryMatch?.[1]) {
-      return WpController.wrapContent(entryMatch[1])
+      return WpController.wrapContent(WpController.cleanExtractedContent(entryMatch[1]))
     }
 
-    // Fallback — return stripped version
-    return WpController.wrapContent(html
+    return WpController.wrapContent(WpController.cleanExtractedContent(html
       .replace(/<header[\s\S]*?<\/header>/gi, '')
       .replace(/<nav[\s\S]*?<\/nav>/gi, '')
       .replace(/<footer[\s\S]*?<\/footer>/gi, '')
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
-    )
+    ))
   }
 
   static wrapContent(content: string): string {
@@ -502,13 +464,45 @@ export default class WpController {
                 a { color: #1976d2; }
                 h1, h2, h3 { line-height: 1.3; }
                 input, form, .search-form, .search-field { display: none !important; }
+
+                svg { width: 1.1em; height: 1.1em; vertical-align: middle; }
+
+                .entry-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+
+                .wp-block-uagb-container { margin-bottom: 12px; }
+
+                .wp-block-uagb-advanced-heading .uagb-heading-text,
+                h1.uagb-heading-text {
+                  font-size: clamp(1.1rem, 4vw, 1.6rem);
+                  font-weight: 700;
+                  margin-bottom: 4px;
+                }
+                .uagb-desc-text { font-size: 14px; color: #555; margin: 0 0 8px; }
+                .uagb-separator { width: 48px; height: 3px; background: #1976d2; margin: 8px 0; border-radius: 2px; }
+
+                .wp-block-uagb-icon-list__wrap {
+                  display: flex;
+                  flex-direction: column;
+                  gap: 8px;
+                  margin: 12px 0;
+                }
+                .wp-block-uagb-icon-list-child { display: flex; align-items: center; gap: 8px; }
+                .uagb-icon-list__source-wrap svg { width: 18px; height: 18px; fill: #1976d2; }
+                .uagb-icon-list__label { font-size: 14px; }
+
+                .wp-block-uagb-faq .uagb-question { font-size: 15px; font-weight: 600; margin: 16px 0 4px; }
+                .wp-block-uagb-faq .uagb-faq-questions-button svg { width: 14px; height: 14px; }
+                .uagb-faq-content p { font-size: 14px; line-height: 1.7; margin: 0 0 8px; }
+
+                .wp-block-uagb-image__figure:empty { display: none; }
+                figure img { max-width: 100%; border-radius: 8px; display: block; margin: 0 auto; }
               </style>
             </head>
             <body>
               ${content}
             </body>
             </html>`
-  }
+    }
 
   static async retrievePostsByCategory(
     req: Request,
@@ -545,6 +539,56 @@ export default class WpController {
     } else {
       res.status(200).json({ status: false, statusCode: response.res.status, message: 'Failed', data: null })
     }
+  }
+
+  /**
+   * Removes the first element matching tagName+class, including all nested
+   * content, correctly handling nested elements of the same tag name.
+   * Plain regex can't do this safely since these blocks contain nested <div>s.
+  */
+  static stripElementBlock(html: string, tagName: string, classNeedle: string): string {
+    const openTagRe = new RegExp(`<${tagName}[^>]*class=["'][^"']*${classNeedle}[^"']*["'][^>]*>`, 'i')
+    const startMatch = openTagRe.exec(html)
+    if (!startMatch) return html
+
+    const startIdx      = startMatch.index
+    const afterOpenIdx  = startIdx + startMatch[0].length
+
+    const openRe  = new RegExp(`<${tagName}\\b`, 'gi')
+    const closeRe = new RegExp(`<\\/${tagName}>`, 'gi')
+
+    const tagEvents: { idx: number; isOpen: boolean }[] = []
+    let m: RegExpExecArray | null
+
+    openRe.lastIndex = afterOpenIdx
+    while ((m = openRe.exec(html))) tagEvents.push({ idx: m.index, isOpen: true })
+
+    closeRe.lastIndex = afterOpenIdx
+    while ((m = closeRe.exec(html))) tagEvents.push({ idx: m.index, isOpen: false })
+
+    tagEvents.sort((a, b) => a.idx - b.idx)
+
+    let depth  = 1 // already inside the opening tag we matched
+    let endIdx = -1
+
+    for (const t of tagEvents) {
+      depth += t.isOpen ? 1 : -1
+      if (depth === 0) {
+        endIdx = t.idx + `</${tagName}>`.length
+        break
+      }
+    }
+
+    if (endIdx === -1) return html // malformed/unbalanced — bail out safely
+    return html.slice(0, startIdx) + html.slice(endIdx)
+  }
+
+  static cleanExtractedContent(html: string): string {
+    let cleaned = html
+    cleaned = WpController.stripElementBlock(cleaned, 'div', 'ast-single-related-posts-container')
+    cleaned = WpController.stripElementBlock(cleaned, 'div', 'heateor_sss_sharing_container')
+    cleaned = cleaned.replace(/<div class=['"]heateorSssClear['"]><\/div>/gi, '')
+    return cleaned
   }
 
 }

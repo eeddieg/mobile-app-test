@@ -3,4 +3,8 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { injectWpStyles } from "./utils/wpStyles"
+
+onMounted(() => injectWpStyles())
 </script>

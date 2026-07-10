@@ -18,7 +18,9 @@
     </q-drawer>
 
     <q-page-container @click.capture="interceptLinks">
-      <router-view />
+      <router-view v-slot="{ Component, route }">
+        <component :is="Component" :key="route.fullPath" />
+      </router-view>
     </q-page-container>
 
     <WpWebViewDialog ref="webViewDialog" />
@@ -42,19 +44,18 @@ function interceptLinks(e: MouseEvent): void {
   const anchor = (e.target as HTMLElement).closest('a')
   if (!anchor) return
 
-  const href   = anchor.getAttribute('href') ?? ''
-  const target = anchor.getAttribute('target') ?? ''
+  const href = anchor.getAttribute('href') ?? ''
 
-  // Allow tel/mailto — these should dial/email directly
+  // Allow tel/mailto — dial/email directly
   if (href.startsWith('tel:') || href.startsWith('mailto:')) return
 
   // Allow internal app routes (hash links)
   if (href.startsWith('#') || href.startsWith('/')) return
 
-  // Allow the explicit "ΑΝΟΙΓΜΑ ΣΤΟ SITE" button (target="_blank")
-  if (target === '_blank') return
+  // Explicit "leave the app" buttons — open in the device's default browser
+  if (anchor.hasAttribute('data-external-browser')) return
 
-  // Everything else, open in popup
+  // Everything else opens in the in-app popup
   if (href.startsWith('http')) {
     e.preventDefault()
     e.stopPropagation()
@@ -62,6 +63,7 @@ function interceptLinks(e: MouseEvent): void {
     webViewDialog.value?.open(href)
   }
 }
+
 </script>
 
 <style scoped>

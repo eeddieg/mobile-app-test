@@ -8,6 +8,7 @@ const headers = {
 const Axios = axios.create({
   baseURL: env.AXIOS_BASE_URL,
   headers,
+  timeout: 10000,
 });
 
 export default Axios;

@@ -3,6 +3,11 @@ import env from "@/config/env";
 import { wpApi, wpApiContents, wpApiStyles } from "./wp.backend"
 
 export default class WpService {
+
+  private static categoryIdCache = new Map<string, { id: number; ts: number }>();
+  private static CATEGORY_CACHE_TTL = 60 * 60 * 1000;
+
+
   static async fetchContentTest(endpoint: string): Promise<any> {    
     try {
       const url = wpApi.defaults.baseURL + "/" + endpoint;
@@ -289,54 +294,61 @@ export default class WpService {
     }
   }
 
-static async fetchCleanPage(url: string): Promise<any> {
-  try {
-    const normalized = url.replace('://www.kiath.gr', '://kiath.gr')
-    const res = await axios.get(normalized, {
-      responseType: 'text',
-      timeout: 8000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
-        'Accept': 'text/html',
-      },
-      // Don't throw on 404 — handle it gracefully
-      validateStatus: (status) => status < 500,
-    })
+  static async fetchCleanPage(url: string): Promise<any> {
+    try {
+      const normalized = url.replace('://www.kiath.gr', '://kiath.gr')
+      const res = await axios.get(normalized, {
+        responseType: 'text',
+        timeout: 8000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Accept': 'text/html',
+        },
+        // Don't throw on 404 — handle it gracefully
+        validateStatus: (status) => status < 500,
+      })
 
-    if (res.status === 404 || res.status === 301 || res.status === 302) {
-      return { status: false, message: `Page returned ${res.status}`, res }
+      if (res.status === 404 || res.status === 301 || res.status === 302) {
+        return { status: false, message: `Page returned ${res.status}`, res }
+      }
+
+      return { status: true, res }
+    } catch (error: any) {
+      console.error('[fetchCleanPage] error:', error?.message)
+      return { status: false, message: error?.message ?? 'Page fetch failed', error }
     }
-
-    return { status: true, res }
-  } catch (error: any) {
-    console.error('[fetchCleanPage] error:', error?.message)
-    return { status: false, message: error?.message ?? 'Page fetch failed', error }
   }
-}
 
   static async fetchPostsByCategory(slug: string, page = 1): Promise<any> {
-  try {
-    const catUrl = `${wpApi.defaults.baseURL}/categories?slug=${encodeURIComponent(slug)}`
-    const catRes = await wpApi.get(catUrl)
-    const categories = catRes.data as Array<{ id: number }>
+    try {
+      let categoryId: number
 
-    if (!categories.length) return { status: false, message: 'Category not found' }
+      const cached = WpService.categoryIdCache.get(slug)
+      if (cached && Date.now() - cached.ts < WpService.CATEGORY_CACHE_TTL) {
+        categoryId = cached.id
+      } else {
+        const catUrl = `${wpApi.defaults.baseURL}/categories?slug=${encodeURIComponent(slug)}`
+        const catRes = await wpApi.get(catUrl)
+        const categories = catRes.data as Array<{ id: number }>
 
-    const categoryId = categories[0]?.id
-    const postsUrl   = `${wpApi.defaults.baseURL}/posts?categories=${categoryId}&per_page=10&page=${page}`
-    
-    console.log('[fetchPostsByCategory] fetching:', postsUrl)
-    
-    const postsRes   = await wpApi.get(postsUrl)
+        if (!categories.length) return { status: false, message: 'Category not found' }
 
-    // WP sends total pages in headers
-    const totalPages = parseInt(postsRes.headers['x-wp-totalpages'] ?? '1', 10)
-    const total      = parseInt(postsRes.headers['x-wp-total'] ?? '0', 10)
+        categoryId = categories[0]!.id
+        WpService.categoryIdCache.set(slug, { id: categoryId, ts: Date.now() })
+      }
 
-    return { status: true, res: postsRes, totalPages, total }
-  } catch (error: any) {
-    return { status: false, message: 'Error fetching posts by category', error }
+      const postsUrl = `${wpApi.defaults.baseURL}/posts?categories=${categoryId}&per_page=10&page=${page}`
+      console.log('[fetchPostsByCategory] fetching:', postsUrl)
+
+      const postsRes = await wpApi.get(postsUrl)
+
+      const totalPages = parseInt(postsRes.headers['x-wp-totalpages'] ?? '1', 10)
+      const total      = parseInt(postsRes.headers['x-wp-total'] ?? '0', 10)
+
+      return { status: true, res: postsRes, totalPages, total }
+    } catch (error: any) {
+      return { status: false, message: 'Error fetching posts by category', error }
+    }
   }
-}
   
 }
