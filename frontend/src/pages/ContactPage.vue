@@ -46,7 +46,6 @@
         </q-list>
       </q-card>
 
-      <!-- KIΘ -->
       <q-card flat bordered class="q-mb-md" style="border-radius: 18px;">
         <q-card-section>
           <div class="text-subtitle1 text-weight-bold q-mb-sm">
@@ -69,7 +68,6 @@
         </q-list>
       </q-card>
 
-      <!-- 24h line highlight -->
       <q-card flat class="bg-red-1 q-mb-md" style="border-radius: 18px; border: 1px solid #ef9a9a;">
         <q-card-section class="text-center">
           <q-icon name="support_agent" color="red" size="36px" />

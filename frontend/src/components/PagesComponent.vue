@@ -1,7 +1,5 @@
 <template>
   <div class="page-container">
-
-    <!-- Header -->
     <div class="header-wrapper q-mb-md">
       <q-item-label
         class="text-center"
@@ -12,7 +10,6 @@
     </div>
 
     {{ pages }}
-    <!-- Footer -->
     <div class="footer-area">
       <i class="responsive-text">{{ footer }}</i>
     </div>
@@ -46,7 +43,6 @@ const resizeHandler = () => {
   screen.updateScreenWidth()
 }
 
-/* LIFECYCLE */
 onMounted(async () => {
   screen.detectDevice()
   window.addEventListener('resize', resizeHandler)

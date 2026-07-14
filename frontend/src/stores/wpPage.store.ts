@@ -20,7 +20,7 @@ export const wpPageStore = defineStore('wpPageStore', {
           this.cache[key] = { data: res.data.data as WpPage, ts: Date.now() }
           return this.cache[key].data
         }
-        return cached?.data ?? null // fall back to stale cache only on failure
+        return cached?.data ?? null
       } catch (e) {
         console.error('wpPageStore.fetchById failed:', e)
         return cached?.data ?? null

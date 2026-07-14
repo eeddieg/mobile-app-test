@@ -49,10 +49,8 @@ function isProblematicWpUrl(url: string): boolean {
 
   const filename = url.split('/').pop() ?? ''
 
-  // Raw non-ASCII characters (literal Greek) e.g. ιατρός-εοπυυ.jpg
   if (/[^\u0020-\u007E]/.test(filename)) return true
 
-  // Percent-encoded non-ASCII e.g. %CE%B9...
   if (/%(8|9|[A-Fa-f][0-9A-Fa-f])[0-9A-Fa-f]/.test(filename)) return true
 
   return false
@@ -69,12 +67,10 @@ export function sanitizeWpContent(html: string): string {
   const parser = new DOMParser()
   const doc    = parser.parseFromString(html, 'text/html')
 
-  // Fix UAGB icon list items -> add line breaks between compressed text
   doc.querySelectorAll('.uagb-icon-list-item').forEach(el => {
     el.insertAdjacentHTML('afterend', '<br>')
   })
 
-  // Fix UAGB icon list labels -> wrap each in a block element
   doc.querySelectorAll('.uagb-icon-list-label').forEach(el => {
     const text = el.textContent?.trim() ?? ''
     if (text) {
@@ -84,12 +80,10 @@ export function sanitizeWpContent(html: string): string {
     }
   })
 
-  // Remove empty UAGB wrappers left behind
   doc.querySelectorAll('.uagb-icon-list-content').forEach(el => {
     if (!el.textContent?.trim()) el.remove()
   })
 
-  // Fix background-image inline styles with Greek filenames
   doc.querySelectorAll<HTMLElement>('[style*="background"]').forEach(el => {
     const style = el.getAttribute('style') ?? ''
     if (!style.includes('wp-content/uploads')) return
@@ -110,13 +104,11 @@ export function sanitizeWpContent(html: string): string {
 export function makePhoneNumbersClickable(html: string): string {
   if (!html) return html
 
-  // First pass: your existing regex
   html = html.replace(
     /(?<!["\->])(\b(?:(?:\d{3}[-\s]?\d{7})|(?:\d{10})|(?:\d{4}[-\s]?\d{6}))\b)(?![^<]*>|[^<>]*<\/a>)/g,
     '<a href="tel:$1" style="color:#1976d2;text-decoration:none;font-weight:500;">$1</a>'
   )
 
-  // Second pass: numbers inside heading tags (<h1>...<strong>210 3410900</strong></h1>)
   html = html.replace(
     /<strong>(\d{3})\s+(\d{7})<\/strong>/g,
     '<strong><a href="tel:$1$2" style="color:inherit;text-decoration:none;">$1 $2</a></strong>'
@@ -162,19 +154,6 @@ export interface DepartmentRow {
   tilefono: string
 }
 
-/**
- * Reconstructs a department/contact table where WordPress has omitted
- * empty <td>s entirely rather than emitting <td></td> placeholders,
- * causing naive rendering to shift remaining cells left.
- *
- * Since WP never reorders cells, only drops empty ones, each surviving
- * cell can be placed into its correct column by content shape alone:
- *  - ΤΜΗΜΑ:    1–3 bare Greek capital letters (Α, ΣΤ, ΖΤ...)
- *  - ΡΟΛΟΣ:    the literal word "Προϊστάμενος"
- *  - ΤΗΛΕΦΩΝΟ: digits with an optional dash, 9–10 digits total
- *  - ΣΤΕΛΕΧΟΣ: everything else (rank + name — always contains a
- *              "/" or a space, so it's caught by exclusion)
- */
 export function parseDepartmentTable(html: string): DepartmentRow[] {
   if (!html) return []
 
@@ -203,10 +182,10 @@ export function parseDepartmentTable(html: string): DepartmentRow[] {
         if (!out.rolos && roleRe.test(val)) { out.rolos = val; continue }
         if (!out.tilefono && phoneRe.test(val.replace(/\s/g, ''))) { out.tilefono = val; continue }
         if (!out.stelexos) { out.stelexos = val; continue }
-        if (!out.tilefono) out.tilefono = val // last-resort catch-all
+        if (!out.tilefono) out.tilefono = val
       }
 
       return out
     })
-    .filter(r => r.iatreio) // drop stray empty rows
+    .filter(r => r.iatreio)
 }

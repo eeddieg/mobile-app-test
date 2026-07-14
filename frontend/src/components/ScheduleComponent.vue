@@ -8,23 +8,15 @@
       <q-item-label class="q-mb-md text-h3">{{ props.title }}</q-item-label>
     </q-item-label>
 
-
-    <!-- Loading -->
     <div class="q-mb-md" v-if="!isButtonVisible">
       <p class="responsive-text">
         Ανάκτηση προγράμματος. Παρακαλώ περιμένετε...
       </p>
     </div>
 
-    <!-- Content -->
     <div v-else class="content-wrapper">
-
       <div v-if="showTableContents" class="inner-wrapper">
-
-        <!-- Header -->
         <div class="header-wrapper">
-
-          <!-- Mobile dropdown -->
           <div v-if="isMobile" class="mobile-select">
             <q-select
               v-model="activeTab"
@@ -40,7 +32,6 @@
             />
           </div>
 
-          <!-- Desktop tabs -->
           <div v-else class="desktop-tabs">
             <q-tabs
               v-model="activeTab"
@@ -59,10 +50,7 @@
           </div>
         </div>
 
-        <!-- Table Area -->
         <div class="table-area">
-
-          <!-- Desktop -->
           <div v-if="!isMobile" class="desktop-table">
             <q-tab-panels v-model="activeTab" animated>
               <q-tab-panel
@@ -80,7 +68,6 @@
             </q-tab-panels>
           </div>
 
-          <!-- Mobile -->
           <div v-else class="mobile-table">
             <q-tab-panels v-model="activeTab" animated>
               <q-tab-panel
@@ -99,7 +86,6 @@
           </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer-area">
           <i class="responsive-text">{{ footer }}</i>
         </div>
@@ -146,9 +132,6 @@ const isButtonVisible = computed(() => {
   return scheduleStoreInstance.scheduleData.length > 0;
 });
 
-// watch(isButtonVisible, () => {
-//   showPdf();
-// });
 watch(
   () => scheduleStoreInstance.scheduleData,
   (data) => {
@@ -158,7 +141,6 @@ watch(
   }
 )
 
-// resize listener
 const resizeHandler = () => {
   screen.updateScreenWidth();
 };
@@ -201,7 +183,6 @@ function showPdf() {
     ...clearRowData(row)
   }));
 
-  // footer.value = rows.value[rows.value.length - 1].footer_text;
   footer.value =
   rows.value.length > 0
     ? rows.value[rows.value.length - 1].footer_text ?? ""

@@ -48,7 +48,6 @@ export const scheduleStore = defineStore("scheduleStore", {
         const timeStr = row['ΩΡΕΣ'];
         if (!timeStr) return row;
 
-        // Split multiple ranges by space
         const ranges = timeStr.split(/\s+/).filter(Boolean);
 
         const formattedRanges = ranges.map((range: string) => {
@@ -56,12 +55,11 @@ export const scheduleStore = defineStore("scheduleStore", {
 
           const formatTime = (t: string) => {
             if (!t) return '';
-            // Remove non-digits
             t = t.replace(/\D/g, '');
             if (t.length === 1 || t.length === 2) return t.padStart(2, '0') + ':00';
             if (t.length === 3) return '0' + t[0] + ':' + t.slice(1);
             if (t.length === 4) return t.slice(0, 2) + ':' + t.slice(2);
-            return t; // fallback
+            return t;
           };
 
           return `${formatTime(start as string)}-${formatTime(end as string)}`;

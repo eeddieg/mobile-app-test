@@ -1,8 +1,6 @@
 <template>
   <q-list>
-
     <template v-for="section in navSections" :key="section.title">
-
       <q-expansion-item
         v-if="section.children?.length"
         :icon="section.icon"

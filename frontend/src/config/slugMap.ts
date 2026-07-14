@@ -1,5 +1,3 @@
-// Maps local slug → WP page ID
-// Source: your /api/wp/pages response
 export const SLUG_TO_PAGE_ID: Record<string, number> = {
   'dikaiouxoi':          1353,
   'grafeio-asthenon':    1390,
@@ -23,8 +21,6 @@ export const SLUG_TO_PAGE_ID: Record<string, number> = {
   'psixologoi':          2070,
 }
 
-// WP slugs (URL-encoded Greek) for pages not yet in API pull
-// Used as fallback: fetch by ?slug=
 export const SLUG_TO_WP_SLUG: Record<string, string> = {
 
   'apostoli':           '%ce%b1%cf%80%ce%bf%cf%83%cf%84%ce%bf%ce%bb%ce%ae',

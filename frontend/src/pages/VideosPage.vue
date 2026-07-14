@@ -21,7 +21,6 @@
         class="q-mb-md video-card cursor-pointer"
         @click="openVideo(post)"
       >
-        <!-- Thumbnail -->
         <div
           class="video-thumb"
           :style="getThumbStyle(post)"
@@ -43,7 +42,6 @@
       </q-card>
     </div>
 
-    <!-- Video Dialog -->
     <q-dialog v-model="dialogOpen" maximized>
       <q-card class="dialog-card">
 
@@ -57,7 +55,6 @@
 
         <q-card-section class="q-pa-none">
 
-          <!-- Embedded video -->
           <div v-if="selectedEmbedUrl" class="video-wrapper">
             <iframe
               :src="selectedEmbedUrl"
@@ -68,7 +65,6 @@
             />
           </div>
 
-          <!-- No embed found — show content -->
           <div v-else class="q-pa-md">
             <div
               class="post-content"
@@ -79,14 +75,6 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <!-- <q-btn
-            flat
-            color="primary"
-            icon="open_in_new"
-            label="Άνοιγμα στο site"
-            :href="selectedPost?.link"
-            target="_blank"
-          /> -->
           <q-btn flat label="Κλείσιμο" @click="closeVideo" />
         </q-card-actions>
 

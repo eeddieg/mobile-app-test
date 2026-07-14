@@ -11,7 +11,6 @@
       </q-item-label>
     </div>
 
-    <!-- Carousel — only for home/all posts -->
     <div v-if="!props.categorySlug" class="carousel-wrapper q-mb-lg">
       <q-carousel
         v-model="slide"
@@ -27,12 +26,10 @@
       </q-carousel>
     </div>
 
-    <!-- Loading -->
     <div v-if="loading" class="full-width flex flex-center q-py-xl">
       <q-spinner-dots color="primary" size="48px" />
     </div>
 
-    <!-- Posts -->
     <div v-else class="inner-wrapper">
 
       <q-card
@@ -47,7 +44,6 @@
           ), url('${getImage(post) ?? ''}')`
         }"
       >
-        <!-- Title + date -->
         <q-card-section>
           <div class="text-h6 text-weight-bold text-white">
             {{ decodeHtmlEntities(post.title.rendered) }}
@@ -57,7 +53,6 @@
           </div>
         </q-card-section>
 
-        <!-- Excerpt / Full content -->
         <q-card-section>
           <div
             v-if="!isExpanded(post.id)"
@@ -73,7 +68,6 @@
           </q-slide-transition>
         </q-card-section>
 
-        <!-- Actions -->
         <q-card-actions align="right">
           <q-btn
             flat
@@ -92,7 +86,6 @@
 
       </q-card>
 
-      <!-- Pagination -->
       <div v-if="totalPages > 1" class="flex flex-center q-mt-md q-mb-xl">
         <q-pagination
           v-model="currentPage"
@@ -224,13 +217,11 @@ async function retrieveCarousel(): Promise<void> {
   }
 }
 
-// Strip category links from excerpt
 function cleanExcerpt(html: string): string {
   if (!html) return ''
   const parser = new DOMParser()
   const doc    = parser.parseFromString(html, 'text/html')
 
-  // Remove any paragraph that contains ONLY links (category links)
   doc.querySelectorAll('p').forEach(p => {
     const text  = p.textContent?.trim() ?? ''
     const links = p.querySelectorAll('a')
@@ -239,7 +230,6 @@ function cleanExcerpt(html: string): string {
     }
   })
 
-  // Remove any remaining standalone links
   doc.querySelectorAll('a').forEach(a => a.remove())
 
   return doc.body.innerHTML.trim()

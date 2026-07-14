@@ -100,7 +100,6 @@ const people      = ref<PersonEntry[]>([])
 const loadingMore = ref(false)
 
 const MAX_EXTRA_PAGES = 5
-// const DYNAMIC_LISTING_SLUGS = ['iatriko-prosopiko', 'nosileutiko', 'psixologoi', ]
 
 const initialLoading = ref(true)
 function parseContent(): Document | null {
@@ -264,7 +263,6 @@ function findNextPageUrl(doc: Document): string {
 
   const currentIndex = items.findIndex(li => {
     if (li.querySelector('.current')) return true
-    // bare-number <li> with no <a> and no <span> — the page-1 REST style
     return !li.querySelector('a') && !!li.textContent?.trim()
   })
   if (currentIndex === -1) return ''
@@ -291,9 +289,6 @@ async function loadAllPeople(): Promise<void> {
   const isDynamicListing = DYNAMIC_LISTING_LINK_FRAGMENTS.some(fragment =>
   props.page!.link.toLowerCase().includes(fragment)
 )
-
-  // const isDynamicListing = DYNAMIC_LISTING_SLUGS.some(slug => props.page!.link.includes(slug))
-
   let firstPagePeople: PersonEntry[] = []
   let nextUrl = ''
 
@@ -307,7 +302,6 @@ async function loadAllPeople(): Promise<void> {
     }
   }
 
-  // Fallback: either not a dynamic-listing page, or the live fetch failed/returned nothing
   if (!firstPagePeople.length) {
     const restParsed = extractPeopleFromHtml(props.page.content.rendered)
     firstPagePeople = restParsed.people

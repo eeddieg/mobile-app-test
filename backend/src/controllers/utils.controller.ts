@@ -24,7 +24,6 @@ export default class UtilsController {
       const extractResponse = await PdfService.extractPdf(filepath);
       
       const folderpath = path.dirname(filepath);
-      // PdfService.deleteDownloadFolder(folderpath);
 
       if (extractResponse == undefined) {
         res.status(200).json({

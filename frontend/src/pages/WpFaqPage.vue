@@ -109,7 +109,6 @@ const sections = computed((): FaqSection[] => {
     const tag     = el.tagName.toLowerCase()
     const text    = el.textContent?.trim() ?? ''
 
-    // H2/H3 → new section title
     if (tag === 'h2' || tag === 'h3') {
       if (currentSection.items.length) {
         result.push(currentSection)
@@ -119,7 +118,6 @@ const sections = computed((): FaqSection[] => {
       continue
     }
 
-    // WP accordion/toggle block — wp-block-details or details element
     if (tag === 'details') {
       const summary = el.querySelector('summary')
       const question = summary?.textContent?.trim() ?? ''
@@ -130,21 +128,16 @@ const sections = computed((): FaqSection[] => {
       continue
     }
 
-    // WP FAQ block — look for heading+paragraph pairs
-    // Question is a <p><strong>...</strong></p> or standalone <strong>
     if (tag === 'p') {
       const strong = el.querySelector('strong')
       if (strong && el.children.length === 1) {
-        // This paragraph is just a bold question
         const question = strong.textContent?.trim() ?? ''
-        // Collect following paragraphs as answer until next bold-only p
         const answerParts: string[] = []
         let j = i + 1
         while (j < children.length) {
           const next    = children[j]
           if (!next) break
           const nextTag = next.tagName.toLowerCase()
-          // Stop at next question (bold-only p) or heading
           if (nextTag === 'h2' || nextTag === 'h3') break
           if (nextTag === 'p') {
             const nextStrong = next.querySelector('strong')
@@ -161,7 +154,6 @@ const sections = computed((): FaqSection[] => {
       }
     }
 
-    // WP uses h4/h5 as questions in some FAQ layouts
     if ((tag === 'h4' || tag === 'h5') && text) {
       const question = text
       const answerParts: string[] = []
@@ -188,7 +180,6 @@ const sections = computed((): FaqSection[] => {
     result.push(currentSection)
   }
 
-  // Fallback — if nothing parsed, return empty (WpDefaultPage will handle)
   return result
 })
 </script>

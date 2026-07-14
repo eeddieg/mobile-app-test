@@ -141,8 +141,6 @@ const relatedPosts        = ref<WPPostExtended[]>([])
 const expandedPosts       = ref<number[]>([])
 const relatedSectionTitle = computed(() => props.relatedTitle ?? 'Σχετικά Άρθρα')
 
-// Strip embedded post loop from static content
-// Keep only content before the first article-style h3>a block
 const staticContent = computed(() => {
   if (!props.page) return ''
 
@@ -157,13 +155,11 @@ const staticContent = computed(() => {
     const el  = node as HTMLElement
     const tag = el.tagName.toLowerCase()
 
-    // Stop at article list section (h3 with anchor = post title)
     if ((tag === 'h3' || tag === 'h2') && el.querySelector('a') && props.relatedCategory) {
       cutFrom = node
       break
     }
 
-    // Skip the section title heading that matches relatedTitle
     if ((tag === 'h2' || tag === 'h3') && props.relatedTitle) {
       if (el.textContent?.trim() === props.relatedTitle) {
         toRemove.push(node)
@@ -171,20 +167,17 @@ const staticContent = computed(() => {
       }
     }
 
-    // Skip "Περισσότερα" links
     if (tag === 'a' && el.textContent?.includes('Περισσότερα')) {
       toRemove.push(node)
       continue
     }
 
-    // Skip image+link blocks belonging to related posts
     if (tag === 'a' && el.querySelector('img') && props.relatedCategory) {
       toRemove.push(node)
       continue
     }
   }
 
-  // Remove everything from the cut point to the end of body
   if (cutFrom) {
     let node: ChildNode | null = cutFrom
     while (node) {
@@ -196,8 +189,6 @@ const staticContent = computed(() => {
 
   toRemove.forEach(n => n.remove())
 
-  // innerHTML walks ALL node types (text + elements), unlike
-  // rebuilding from .children[].outerHTML which drops loose text nodes
   let html = doc.body.innerHTML
   html = sanitizeWpContent(html)
   html = fixWpImageUrls(html)
@@ -206,7 +197,6 @@ const staticContent = computed(() => {
   return html
 })
 
-// Fetch related posts when category prop is provided
 watch(() => props.relatedCategory, async (cat) => {
   if (!cat) return
   const result = await store.fetchPostsByCategory(cat, 1)

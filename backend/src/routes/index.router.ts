@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response, Router } from "express";
-// import createHttpError from "http-errors";
 import utilsRouter from "./utils.router";
 import wpRouter from "./wp.router";
 
@@ -18,7 +17,6 @@ router.use("/utils", utilsRouter);
 router.use("/wp", wpRouter);
 
 router.use(async (req: Request, res: Response, next: NextFunction) => {
-  // next(createHttpError.NotFound('Route not Found'))
     res.status(404).json({
       code: 404,
       message: "Route not Found",

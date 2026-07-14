@@ -46,16 +46,12 @@ function interceptLinks(e: MouseEvent): void {
 
   const href = anchor.getAttribute('href') ?? ''
 
-  // Allow tel/mailto — dial/email directly
   if (href.startsWith('tel:') || href.startsWith('mailto:')) return
 
-  // Allow internal app routes (hash links)
   if (href.startsWith('#') || href.startsWith('/')) return
 
-  // Explicit "leave the app" buttons — open in the device's default browser
   if (anchor.hasAttribute('data-external-browser')) return
 
-  // Everything else opens in the in-app popup
   if (href.startsWith('http')) {
     e.preventDefault()
     e.stopPropagation()

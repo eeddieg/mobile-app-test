@@ -7,39 +7,6 @@ import axios from "axios";
 
 export default class PdfService {
   
-  // static resetDownloadFolder(folderPath: string) {
-  //   try {
-  //     if (fs.existsSync(folderPath)) {
-  //       const res = fs.rmSync(folderPath, { recursive: true })
-  //       if (res == undefined) {
-  //         fs.mkdirSync(folderPath, { recursive: true });
-  //         return {
-  //           status: true,
-  //           message: "Folder reset successfully."
-  //         }
-  //       } else {
-  //         return {
-  //           status: false,
-  //           message: "Folder can not be reset."
-  //         }
-  //       }
-  //     } else {
-  //         fs.mkdirSync(folderPath, { recursive: true });
-  //         return {
-  //           status: true,
-  //           message: "Folder reset successfully."
-  //         }
-  //     }
-  //   } catch (error) {
-  //     const folderName = path.dirname(folderPath);
-  //     return {
-  //       status: false,
-  //       message: `Error in deleting folder ${folderName}`,
-  //       error
-  //     }
-  //   }
-  // }
-
     static createDownloadFolder(folderPath: string) {
     try {
       if (fs.existsSync(folderPath)) {
@@ -109,7 +76,6 @@ export default class PdfService {
     const folderName = "assets";
     const pdfPath = path.join(__dirname, "..", "..", folderName);
     
-    // delete download folder, if exists and then create it again
     PdfService.deleteDownloadFolder(pdfPath)
     PdfService.createDownloadFolder(pdfPath)
 
@@ -124,10 +90,8 @@ export default class PdfService {
         responseType: "arraybuffer",
       });
 
-      // Convert ArrayBuffer to Buffer
       const buffer = Buffer.from(response.data);
       
-      // Write the PDF file
       fs.writeFileSync(filepath, buffer);
       console.log(`PDF file ${Color.Bright}${Color.FgBlue}${filename}${Color.Reset} downloaded to ${Color.Bright}${Color.FgGreen}${pdfPath}${Color.Reset}`);
 
