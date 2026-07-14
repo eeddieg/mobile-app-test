@@ -16,7 +16,15 @@
         </div>
 
         <iframe
-          v-if="iframeSrc"
+          v-if="pdfSrc"
+          :src="pdfSrc"
+          class="web-iframe"
+          frameborder="0"
+          @load="iframeLoading = false"
+        />
+
+        <iframe
+          v-else-if="iframeSrc"
           :srcdoc="iframeSrc"
           class="web-iframe"
           frameborder="0"
@@ -44,15 +52,25 @@ const store         = wpPageStore()
 const isOpen        = ref(false)
 const iframeLoading = ref(false)
 const iframeSrc     = ref('')
-const displayUrl    = ref('')
-
+const pdfSrc         = ref('')
 const friendlyTitle = ref('')
+
+function isPdfUrl(href: string): boolean {
+  return /\.pdf(\?|#|$)/i.test(href)
+}
 
 async function open(href: string): Promise<void> {
   friendlyTitle.value = '...'
   iframeSrc.value     = ''
+  pdfSrc.value         = ''
   iframeLoading.value = true
   isOpen.value        = true
+
+  if (isPdfUrl(href)) {
+    friendlyTitle.value = decodeURIComponent(href.split('/').pop() ?? 'PDF')
+    pdfSrc.value         = href
+    return
+  }
 
   const result = await store.fetchCleanPage(href)
 
@@ -67,20 +85,25 @@ async function open(href: string): Promise<void> {
       <p>Ο σύνδεσμος δεν είναι διαθέσιμος.</p>
       <a href="${href}" target="_blank" style="color:#1976d2">Άνοιγμα στο browser</a>
     </body></html>`
+    iframeLoading.value = false
   }
-
-  iframeLoading.value = false
 }
 
 function close(): void {
   isOpen.value        = false
   iframeSrc.value     = ''
-  displayUrl.value    = ''
+  pdfSrc.value         = ''
   iframeLoading.value = false
 }
 
 defineExpose({ open, close })
 </script>
+
+<style scoped>
+.dialog-card { display: flex; flex-direction: column; height: 100vh; }
+.full-height { flex: 1; overflow: hidden; }
+.web-iframe { width: 100%; height: 100%; border: none; display: block; }
+</style>
 
 <style scoped>
 .dialog-card {

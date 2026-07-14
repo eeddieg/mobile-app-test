@@ -39,6 +39,9 @@ const CUSTOM_RENDERERS: Record<string, ReturnType<typeof defineAsyncComponent>> 
   'iatriko-prosopiko':    defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
   'nosileutiko':          defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
   'psixologoi':           defineAsyncComponent(() => import('../pages/WpPersonGridPage.vue')),
+  'tmimata-kia':          defineAsyncComponent(() => import('../pages/WpDepartmentTablePage.vue')),
+  'tmimata-kith':         defineAsyncComponent(() => import('../pages/WpDepartmentTablePage.vue')),
+
 }
 
 const RELATED_CATEGORIES: Record<string, { category: string; title: string }> = {
@@ -64,8 +67,6 @@ const pageComponent = computed(() => {
 async function load(): Promise<void> {
   const localSlug = route.params.slug as string
 
-  console.log('[WpPage] loading slug:', localSlug)
-
   loading.value = true
   error.value   = false
   page.value    = null
@@ -73,14 +74,9 @@ async function load(): Promise<void> {
   try {
     const pageId = SLUG_TO_PAGE_ID[localSlug]
 
-    console.log('[WpPage] pageId:', pageId)
-
-
     page.value = pageId
       ? await store.fetchById(pageId)
       : await store.fetchBySlug(SLUG_TO_WP_SLUG[localSlug] ?? localSlug)
-
-    console.log('[WpPage] page fetched:', page.value?.id, page.value?.title?.rendered)
 
   } catch {
     error.value = true

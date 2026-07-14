@@ -96,6 +96,13 @@ interface PersonEntry {
   personLink: string
 }
 
+const people      = ref<PersonEntry[]>([])
+const loadingMore = ref(false)
+
+const MAX_EXTRA_PAGES = 5
+// const DYNAMIC_LISTING_SLUGS = ['iatriko-prosopiko', 'nosileutiko', 'psixologoi', ]
+
+const initialLoading = ref(true)
 function parseContent(): Document | null {
   if (!props.page) return null
   const parser = new DOMParser()
@@ -120,109 +127,10 @@ const clinicInfoHtml = computed(() => {
   return ''
 })
 
-/**
- * Parses a person-listing HTML fragment into entries + an optional "next page" URL.
- * Recurses into generic wrapper elements (div, section, etc.) so it works both on
- * the flat REST `content.rendered` markup and on nested Beaver Builder page HTML
- * (from the "page 2" scrape), without double-counting text inside h3/h4/h5/img.
- */
-// function extractPeopleFromHtml(html: string): { people: PersonEntry[]; moreUrl: string } {
-//   const parser = new DOMParser()
-//   const doc    = parser.parseFromString(html, 'text/html')
-
-//   const entries: PersonEntry[] = []
-//   let current: PersonEntry | null = null
-//   let pendingRole    = ''
-//   let pendingImage   = ''
-//   let sectionStarted = false
-
-//   function handleText(node: ChildNode): void {
-//     const text = node.textContent?.trim() ?? ''
-//     if (text && current) current.lines.push(text)
-//   }
-
-//   function handleTerminal(el: HTMLElement, tag: string): void {
-//     if (tag === 'h3') {
-//       if (current) { entries.push(current); current = null }
-//       pendingRole    = el.textContent?.trim() ?? ''
-//       sectionStarted = true
-//       return
-//     }
-
-//     if (tag === 'img') {
-//       const src = el.getAttribute('src') ?? ''
-//       if (!src || !sectionStarted) return
-//       if (current && !current.image) current.image = src
-//       else if (!current) pendingImage = src
-//       return
-//     }
-
-//     if (tag === 'h4') {
-//       if (current) entries.push(current)
-//       const link = el.querySelector('a')
-//       current = {
-//         role:       pendingRole,
-//         name:       el.textContent?.trim() ?? '',
-//         lines:      [],
-//         tags:       [],
-//         image:      pendingImage,
-//         personLink: link?.getAttribute('href') ?? '',
-//       }
-//       pendingImage = ''
-//       return
-//     }
-
-//     if (tag === 'h5') {
-//       if (!current) return
-//       if (el.querySelector('a')) {
-//         el.querySelectorAll('a').forEach(a => {
-//           const t = a.textContent?.trim()
-//           if (t) current!.tags.push(t)
-//         })
-//       } else {
-//         const text = el.textContent?.trim() ?? ''
-//         if (text) current.lines.push(text)
-//       }
-//     }
-//   }
-
-//   function walk(node: ChildNode): void {
-//     if (node.nodeType === Node.TEXT_NODE) { handleText(node); return }
-//     if (node.nodeType !== Node.ELEMENT_NODE) return
-
-//     const el  = node as HTMLElement
-//     const tag = el.tagName.toLowerCase()
-
-//     if (tag === 'script' || tag === 'style') return
-//     // Terminal-but-ignored tags: read nothing from them, don't descend
-//     if (tag === 'h1' || tag === 'h2' || tag === 'p' || tag === 'ul' || tag === 'a') return
-//     // Terminal-and-meaningful tags: extract data, don't descend further
-//     if (tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'img') {
-//       handleTerminal(el, tag)
-//       return
-//     }
-//     // Generic wrapper (div, section, span, Beaver Builder row/col, etc.) — descend
-//     for (const child of Array.from(el.childNodes)) walk(child)
-//   }
-
-//   for (const child of Array.from(doc.body.childNodes)) walk(child)
-//   if (current) entries.push(current)
-
-//   const moreA   = doc.querySelector('ul.page-numbers a')
-//   const moreUrl = moreA?.getAttribute('href') ?? ''
-
-//   return { people: entries, moreUrl }
-// }
-
-
-
 function extractPeopleFromHtml(html: string): { people: PersonEntry[]; moreUrl: string } {
   const parser = new DOMParser()
   const doc    = parser.parseFromString(html, 'text/html')
 
-  // Beaver Builder "Blog Posts" module (seen on paginated archive pages)
-  // wraps each person in a self-contained .uabb-blog-post-content block —
-  // parse those directly instead of walking the flat document stream.
   const blogBlocks = doc.querySelectorAll('.uabb-blog-post-content')
   const people = blogBlocks.length
     ? extractFromBlogGrid(doc, blogBlocks)
@@ -279,8 +187,6 @@ function extractFromBlogGrid(doc: Document, blocks: NodeListOf<Element>): Person
   return entries
 }
 
-// The original flat state-machine walker, used for the plain REST content.rendered
-// markup (dioikisi, dioikisi-kia, dioikisi-kith, and iatriko-prosopiko's page 1).
 function extractFlat(doc: Document): PersonEntry[] {
   const entries: PersonEntry[] = []
   let current: PersonEntry | null = null
@@ -352,13 +258,6 @@ function extractFlat(doc: Document): PersonEntry[] {
   return entries
 }
 
-/**
- * Finds the URL of the page AFTER the current one.
- * Handles two different markups seen on this site:
- *  - REST content.rendered: current page is a bare <li>N</li> with no link at all
- *  - Scraped rendered HTML: current page is <span class="...current">N</span>
- * "Next" is whichever <li> comes immediately after the current one, if it has a link.
- */
 function findNextPageUrl(doc: Document): string {
   const items = Array.from(doc.querySelectorAll('ul.page-numbers > li'))
   if (!items.length) return ''
@@ -376,64 +275,51 @@ function findNextPageUrl(doc: Document): string {
 }
 
 
-
-
-const people      = ref<PersonEntry[]>([])
-const loadingMore = ref(false)
-
-const MAX_EXTRA_PAGES = 5 // safety cap against an accidental pagination loop
-
-// async function loadAllPeople(): Promise<void> {
-//   people.value = []
-//   if (!props.page) return
-
-//   const first = extractPeopleFromHtml(props.page.content.rendered)
-//   people.value = first.people
-
-//   let nextUrl = first.moreUrl
-//   let guard   = 0
-
-//   while (nextUrl && guard < MAX_EXTRA_PAGES) {
-//     guard++
-//     loadingMore.value = true
-//     const result = await store.fetchCleanPage(nextUrl)
-//     loadingMore.value = false
-
-//     if (!result || !result.html) break
-
-//     const parsed = extractPeopleFromHtml(result.html)
-//     if (!parsed.people.length) break
-
-//     people.value = [...people.value, ...parsed.people]
-
-//     if (parsed.moreUrl === nextUrl) break // guard against a self-referencing link
-//     nextUrl = parsed.moreUrl
-//   }
-// }
-
-const initialLoading = ref(true)
-
 async function loadAllPeople(): Promise<void> {
   people.value = []
   if (!props.page) return
 
   initialLoading.value = true
+
+  const DYNAMIC_LISTING_LINK_FRAGMENTS = [
+    'iatriko-prosopiko', 'nosileutiko', 'psixologoi',
+    '%ce%b9%ce%b1%cf%84%cf%81%ce%b9%ce%ba%cf%8c-%cf%80%cf%81%ce%bf%cf%83%cf%89%cf%80%ce%b9%ce%ba%cf%8c', // ιατρικό-προσωπικό
+    '%ce%bd%ce%bf%cf%83%ce%b7%ce%bb%ce%b5%cf%85%cf%84%ce%b9%ce%ba%cf%8c-%cf%80%cf%81%ce%bf%cf%83%cf%89%cf%80%ce%b9%ce%ba%cf%8c', // νοσηλευτικό-προσωπικό
+    '%cf%88%cf%85%cf%87%ce%bf%ce%bb%ce%bf%ce%b3%ce%bf%ce%b9', // ψυχολογοι
+  ]
+
+  const isDynamicListing = DYNAMIC_LISTING_LINK_FRAGMENTS.some(fragment =>
+  props.page!.link.toLowerCase().includes(fragment)
+)
+
+  // const isDynamicListing = DYNAMIC_LISTING_SLUGS.some(slug => props.page!.link.includes(slug))
+
+  let firstPagePeople: PersonEntry[] = []
+  let nextUrl = ''
+
+  if (isDynamicListing) {
+    const live = await store.fetchCleanPage(props.page.link)
+
+    if (live?.html) {
+      const liveParsed = extractPeopleFromHtml(live.html)
+      firstPagePeople = liveParsed.people
+      nextUrl = liveParsed.moreUrl
+    }
+  }
+
+  // Fallback: either not a dynamic-listing page, or the live fetch failed/returned nothing
+  if (!firstPagePeople.length) {
+    const restParsed = extractPeopleFromHtml(props.page.content.rendered)
+    firstPagePeople = restParsed.people
+    nextUrl = restParsed.moreUrl
+  }
+
   const seen: Map<string, PersonEntry> = new Map()
-
-  // Always prefer the live-rendered page over the stored REST content —
-  // dynamic "Blog Posts" listing modules can drift out of sync with what
-  // content.rendered has cached, as seen on this exact page.
-  const live = await store.fetchCleanPage(props.page.link)
-  const html = live?.html || props.page.content.rendered
-
-  const first = extractPeopleFromHtml(html)
-  first.people.forEach(p => { if (p.name && !seen.has(p.name)) seen.set(p.name, p) })
+  firstPagePeople.forEach(p => { if (p.name && !seen.has(p.name)) seen.set(p.name, p) })
   people.value = Array.from(seen.values())
   initialLoading.value = false
 
-  let nextUrl = first.moreUrl
-  let guard   = 0
-
+  let guard = 0
   while (nextUrl && guard < MAX_EXTRA_PAGES) {
     guard++
     loadingMore.value = true
@@ -456,8 +342,6 @@ async function loadAllPeople(): Promise<void> {
 }
 
 watch(() => props.page, loadAllPeople, { immediate: true })
-
-
 
 function resolveImgSrc(src: string): string {
   if (!src) return ''

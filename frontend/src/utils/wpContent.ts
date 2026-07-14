@@ -63,37 +63,18 @@ function isProblematicWpUrl(url: string): boolean {
  * and won't render correctly outside the WP theme.
  * Keeps only semantic HTML: headings, paragraphs, lists, tables, images.
  */
-// export function sanitizeWpContent(html: string): string {
-//   if (!html) return html
-
-//   const parser = new DOMParser()
-//   const doc = parser.parseFromString(html, 'text/html')
-
-//   doc.querySelectorAll('.uagb-icon-list-item, .uagb-icon-list').forEach(el => el.remove())
-
-//   doc.querySelectorAll('[class*="uagb-block"]').forEach(el => {
-//     if (!el.textContent?.trim()) el.remove()
-//   })
-
-//   doc.querySelectorAll('.uagb-separator, .wp-block-separator, hr.is-style-wide').forEach(el => el.remove())
-
-//   doc.querySelectorAll('div:empty, span:empty').forEach(el => el.remove())
-
-//   return doc.body.innerHTML
-// }
-
 export function sanitizeWpContent(html: string): string {
   if (!html) return html
 
   const parser = new DOMParser()
   const doc    = parser.parseFromString(html, 'text/html')
 
-  // Fix UAGB icon list items — add line breaks between compressed text
+  // Fix UAGB icon list items -> add line breaks between compressed text
   doc.querySelectorAll('.uagb-icon-list-item').forEach(el => {
     el.insertAdjacentHTML('afterend', '<br>')
   })
 
-  // Fix UAGB icon list labels — wrap each in a block element
+  // Fix UAGB icon list labels -> wrap each in a block element
   doc.querySelectorAll('.uagb-icon-list-label').forEach(el => {
     const text = el.textContent?.trim() ?? ''
     if (text) {
@@ -149,4 +130,83 @@ export function decodeHtmlEntities(html: string): string {
   const textarea = document.createElement('textarea')
   textarea.innerHTML = html
   return textarea.value
+}
+
+export function normalizeTableRows(html: string): string {
+  if (!html) return html
+
+  const parser = new DOMParser()
+  const doc    = parser.parseFromString(html, 'text/html')
+
+  doc.querySelectorAll('table').forEach(table => {
+    const headerCount = table.querySelectorAll('thead th').length
+    if (!headerCount) return
+
+    table.querySelectorAll('tbody tr').forEach(row => {
+      const cellCount = row.querySelectorAll('td').length
+      const missing   = headerCount - cellCount
+      for (let i = 0; i < missing; i++) {
+        row.appendChild(doc.createElement('td'))
+      }
+    })
+  })
+
+  return doc.body.innerHTML
+}
+
+export interface DepartmentRow {
+  iatreio:  string
+  tmima:    string
+  stelexos: string
+  rolos:    string
+  tilefono: string
+}
+
+/**
+ * Reconstructs a department/contact table where WordPress has omitted
+ * empty <td>s entirely rather than emitting <td></td> placeholders,
+ * causing naive rendering to shift remaining cells left.
+ *
+ * Since WP never reorders cells, only drops empty ones, each surviving
+ * cell can be placed into its correct column by content shape alone:
+ *  - ΤΜΗΜΑ:    1–3 bare Greek capital letters (Α, ΣΤ, ΖΤ...)
+ *  - ΡΟΛΟΣ:    the literal word "Προϊστάμενος"
+ *  - ΤΗΛΕΦΩΝΟ: digits with an optional dash, 9–10 digits total
+ *  - ΣΤΕΛΕΧΟΣ: everything else (rank + name — always contains a
+ *              "/" or a space, so it's caught by exclusion)
+ */
+export function parseDepartmentTable(html: string): DepartmentRow[] {
+  if (!html) return []
+
+  const parser = new DOMParser()
+  const doc    = parser.parseFromString(html, 'text/html')
+  const rows   = Array.from(doc.querySelectorAll('table tbody tr'))
+
+  const deptLetterRe = /^[Α-Ωα-ω]{1,3}$/
+  const roleRe       = /^Προϊστάμενος$/i
+  const phoneRe       = /^\d{3}-?\d{6,7}$/
+
+  return rows
+    .map(row => {
+      const cells = Array.from(row.querySelectorAll('td'))
+        .map(td => td.textContent?.trim() ?? '')
+
+      const out: DepartmentRow = { iatreio: '', tmima: '', stelexos: '', rolos: '', tilefono: '' }
+      if (!cells.length) return out
+
+      out.iatreio = cells[0] ?? ''
+
+      for (let i = 1; i < cells.length; i++) {
+        const val = cells[i]
+        if (!val) continue
+        if (!out.tmima && deptLetterRe.test(val)) { out.tmima = val; continue }
+        if (!out.rolos && roleRe.test(val)) { out.rolos = val; continue }
+        if (!out.tilefono && phoneRe.test(val.replace(/\s/g, ''))) { out.tilefono = val; continue }
+        if (!out.stelexos) { out.stelexos = val; continue }
+        if (!out.tilefono) out.tilefono = val // last-resort catch-all
+      }
+
+      return out
+    })
+    .filter(r => r.iatreio) // drop stray empty rows
 }

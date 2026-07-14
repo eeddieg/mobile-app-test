@@ -115,9 +115,10 @@ import { postListStore } from "../stores/postlist.store"
 import type { WpPage, WPPostExtended } from "../models/models"
 import {
   decodeHtmlEntities,
+  fixBrokenImagesAsync,
   fixWpImageUrls,
   makePhoneNumbersClickable,
-  fixBrokenImagesAsync,
+  normalizeTableRows,
   sanitizeWpContent
 } from "../utils/wpContent"
 
@@ -127,8 +128,8 @@ const props = defineProps<{
   page:             WpPage | null
   loading:          boolean
   error:            boolean
-  relatedCategory?: string       // e.g. 'αιμοδοσία'
-  relatedTitle?:    string       // e.g. 'Αιμοδοσίες'
+  relatedCategory?: string
+  relatedTitle?:    string
 }>()
 
 defineEmits<{ reload: [] }>()
@@ -142,8 +143,6 @@ const relatedSectionTitle = computed(() => props.relatedTitle ?? 'Σχετικά
 
 // Strip embedded post loop from static content
 // Keep only content before the first article-style h3>a block
-// WpDefaultPage.vue — replace the staticContent computed
-
 const staticContent = computed(() => {
   if (!props.page) return ''
 
@@ -153,8 +152,6 @@ const staticContent = computed(() => {
   const toRemove: ChildNode[] = []
   let cutFrom: ChildNode | null = null
 
-  // Walk ELEMENT nodes only to decide what to cut/remove,
-  // but do NOT rebuild HTML from these — just mark nodes.
   for (const node of Array.from(doc.body.childNodes)) {
     if (node.nodeType !== Node.ELEMENT_NODE) continue
     const el  = node as HTMLElement
@@ -205,6 +202,7 @@ const staticContent = computed(() => {
   html = sanitizeWpContent(html)
   html = fixWpImageUrls(html)
   html = makePhoneNumbersClickable(html)
+  html = normalizeTableRows(html)
   return html
 })
 
@@ -273,61 +271,185 @@ function interceptLinks(e: MouseEvent): void {
 
 </script>
 
+
 <style scoped>
-.page-container {
-  min-height: 100vh;
-  width: 100%;
-  padding: 16px;
+* {
   box-sizing: border-box;
+}
+
+.page-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
 }
+
 .page-title {
+  margin-bottom: 8px;
+  padding: 0 8px;
   font-size: clamp(1rem, 4vw, 1.8rem);
   font-weight: 600;
-  text-align: center;
   line-height: 1.3;
+  text-align: center;
   word-break: break-word;
-  padding: 0 8px;
-  margin-bottom: 8px;
 }
+
 .inner-wrapper {
   width: 100%;
   max-width: 900px;
   padding: 0 4px;
   box-sizing: border-box;
 }
-.content-card  { border-radius: 18px; }
-.content-card :deep(.q-card__section) { padding: 12px; }
-.article-card {
+
+.content-card {
   border-radius: 18px;
+}
+
+.content-card :deep(.q-card__section) {
+  padding: 12px;
+}
+
+.article-card {
   overflow: hidden;
-  background-size: cover;
-  background-position: center;
   min-height: 120px;
+  border-radius: 18px;
+  background-position: center;
+  background-size: cover;
 }
-.post-content { width: 100%; font-size: 14px; line-height: 1.7; overflow-wrap: break-word; word-break: break-word; }
-.post-content :deep(h1) { font-size: clamp(1.1rem, 4vw, 1.6rem); font-weight: 700; margin: 8px 0 4px; }
-.post-content :deep(h2) { font-size: clamp(1rem, 3.5vw, 1.4rem); font-weight: 600; margin: 6px 0 4px; }
-.post-content :deep(h3), .post-content :deep(h4), .post-content :deep(h5) { font-size: clamp(0.9rem, 3vw, 1.1rem); font-weight: 600; margin: 6px 0 4px; }
-.post-content :deep(p)  { margin-bottom: 10px; }
-.post-content :deep(a)  { color: #1976d2; word-break: break-word; }
-.post-content :deep(ul), .post-content :deep(ol) { padding-left: 20px; margin-bottom: 10px; }
-.post-content :deep(li) { margin-bottom: 4px; }
-.post-content :deep(strong) { font-weight: 600; }
-.post-content :deep(img) { max-width: 100% !important; height: auto !important; display: block; margin: 12px auto; border-radius: 8px; }
-.post-content :deep(figure) { max-width: 100%; margin: 12px auto; text-align: center; }
-.post-content :deep(table) { width: 100%; display: block; overflow-x: auto; border-collapse: collapse; margin-bottom: 12px; }
-.post-content :deep(td), .post-content :deep(th) { padding: 6px 10px; border: 1px solid #ddd; font-size: 13px; vertical-align: top; }
-.post-content :deep(thead) { background: #f5f5f5; font-weight: 600; }
-.post-content :deep(tr:nth-child(even)) { background: #fafafa; }
-.post-content :deep(iframe), .post-content :deep(video) { max-width: 100%; width: 100%; border: none; border-radius: 8px; }
+
+.post-content {
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.post-content :deep(h1) {
+  margin: 8px 0 4px;
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  font-weight: 700;
+}
+
+.post-content :deep(h1 a[href^="tel:"]) {
+  color: #1976d2 !important;
+  text-decoration: none;
+}
+
+.post-content :deep(h2) {
+  margin: 6px 0 4px;
+  font-size: clamp(1rem, 3.5vw, 1.4rem);
+  font-weight: 600;
+}
+
+.post-content :deep(h3),
+.post-content :deep(h4),
+.post-content :deep(h5) {
+  margin: 6px 0 4px;
+  font-size: clamp(0.9rem, 3vw, 1.1rem);
+  font-weight: 600;
+}
+
+.post-content :deep(p) {
+  margin-bottom: 10px;
+}
+
+.post-content :deep(p:has(> a:first-child)) {
+  position: relative;
+  padding-left: 18px;
+}
+
+.post-content :deep(p:has(> a:first-child))::before {
+  content: "•";
+  position: absolute;
+  left: 4px;
+  color: #1976d2;
+}
+
+.post-content :deep(a) {
+  color: #1976d2;
+  word-break: break-word;
+}
+
+.post-content :deep(ul),
+.post-content :deep(ol) {
+  margin-bottom: 10px;
+  padding-left: 20px;
+}
+
+.post-content :deep(li) {
+  margin-bottom: 4px;
+}
+
+.post-content :deep(strong) {
+  font-weight: 600;
+}
+
+.post-content :deep(img) {
+  display: block;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 12px auto;
+  border-radius: 8px;
+}
+
+.post-content :deep(figure) {
+  max-width: 100%;
+  margin: 12px auto;
+  text-align: center;
+}
+
+.post-content :deep(table) {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.post-content :deep(td),
+.post-content :deep(th) {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.post-content :deep(thead) {
+  font-weight: 600;
+  background: #f5f5f5;
+}
+
+.post-content :deep(tr:nth-child(even)) {
+  background: #fafafa;
+}
+
+.post-content :deep(iframe),
+.post-content :deep(video) {
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
 @media (max-width: 600px) {
-  .page-container { padding: 8px; }
-  .inner-wrapper  { padding: 0 4px; }
-  .content-card :deep(.q-card__section) { padding: 8px; }
-  .post-content   { font-size: 13px; }
+  .page-container {
+    padding: 8px;
+  }
+
+  .inner-wrapper {
+    padding: 0 4px;
+  }
+
+  .content-card :deep(.q-card__section) {
+    padding: 8px;
+  }
+
+  .post-content {
+    font-size: 13px;
+  }
 }
-* { box-sizing: border-box; }
 </style>
